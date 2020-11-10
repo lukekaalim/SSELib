@@ -9,7 +9,7 @@ namespace SSE_Data_Lib_Tests
         [TestMethod]
         public async Task TestMethod()
         {
-            SSEData.Plugin plugin = await SSEData.Plugin.Load("/Users/lukekaalim/Downloads/Ranka Axe-446-1-0-1/Data/Ranka.esp");
+            SSEData.Plugin plugin = await SSEData.Plugin.Load("/Users/lukekaalim/Downloads/data/Immersive Weapons.esp");
             Assert.AreEqual(plugin.pluginInformation.cnam.content, "visorium");
         }
     }

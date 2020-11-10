@@ -31,6 +31,10 @@ namespace SSEData
     {
         public string type;
         public UInt32 groupSize;
+        /// <summary>
+        /// Label means different things based on group type,
+        /// so we store it as a byte array until we inspect the group type
+        /// </summary>
         public Byte[] label;
         public Int32 groupType;
         public VersionControlInfo versionControlInfo;
@@ -77,6 +81,9 @@ namespace SSEData
         // The "record" format, which is a binary format.
         public string type; // 4 bytes
         public UInt32 dataSize;
+        /// <summary>
+        /// Flags means different things depending on the record type
+        /// </summary>
         public UInt32 flags;
         public FormID id;
         public VersionControlInfo versionControlInfo;

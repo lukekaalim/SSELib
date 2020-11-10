@@ -73,7 +73,9 @@ namespace SSEData
         }
     }
 
-
+    /// <summary>
+    /// Helper methods to get find fields on records and cast them to appropriate types
+    /// </summary>
     public static class RecordExtensions
     {
 
