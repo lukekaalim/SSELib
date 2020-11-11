@@ -2,7 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 
-namespace SSEData
+namespace SSE
 {
     /// <summary>
     /// https://en.uesp.net/wiki/Tes5Mod:Mod_File_Format/TES4

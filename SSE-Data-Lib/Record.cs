@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace SSEData
+namespace SSE
 {
     public struct VersionControlInfo
     {
@@ -39,13 +39,16 @@ namespace SSEData
         public Int32 groupType;
         public VersionControlInfo versionControlInfo;
         public UInt32 unknown;
-        public List<Record> data;
+        public List<Record> records;
+        public List<Group> groups;
 
         public static Group ParseFirst(Byte[] bytes, int offset = 0)
         {
             var groupSize = BitConverter.ToUInt32(bytes, offset + 4);
             var label = new Byte[4];
             Buffer.BlockCopy(bytes, offset + 8, label, 0, 4);
+            (List<Record> records, List<Group> groups) = ParseAllRecordsAndGroups(bytes, offset + 24, (int)groupSize - 24);
+
             return new Group()
             {
                 type = Encoding.UTF8.GetString(bytes, offset, 4),
@@ -54,8 +57,36 @@ namespace SSEData
                 groupType = BitConverter.ToInt32(bytes, offset + 12),
                 versionControlInfo = VersionControlInfo.Parse(bytes, offset + 16),
                 unknown = BitConverter.ToUInt32(bytes, offset + 20),
-                data = Record.ParseAll(bytes, offset + 24, (int)groupSize - 24),
+                records = records,
+                groups = groups,
             };
+        }
+
+        public static (List<Record>, List<Group>) ParseAllRecordsAndGroups(Byte[] bytes, int offset, int length) {
+            var records = new List<Record>();
+            var groups = new List<Group>();
+            int index = offset;
+
+            while (index < offset + length)
+            {
+                var type = Encoding.UTF8.GetString(bytes, index, 4);
+                switch (type) {
+                    case "GRUP": {
+                        var group = Group.ParseFirst(bytes, index);
+                        index += (int)group.groupSize;
+                        groups.Add(group);
+                        break;
+                    }
+                    default: {
+                        var record = Record.ParseFirst(bytes, index);
+                        index += (int)record.dataSize + 24;
+                        records.Add(record);
+                        break;
+                    }
+                }
+            }
+
+            return (records, groups);
         }
 
         public static List<Group> ParseAll(Byte[] bytes, int offset, int length)
@@ -93,8 +124,9 @@ namespace SSEData
         public static Record ParseFirst(Byte[] bytes, int offset = 0)
         {
             var dataSize = BitConverter.ToUInt32(bytes, offset + 4);
+            var type = Encoding.UTF8.GetString(bytes, offset, 4);
             return new Record() {
-                type = Encoding.UTF8.GetString(bytes, offset, 4),
+                type = type,
                 dataSize = dataSize,
                 flags = BitConverter.ToUInt32(bytes, offset + 8),
                 id =  FormID.From(bytes, offset + 12),

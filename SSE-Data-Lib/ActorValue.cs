@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SSEData
+namespace SSE
 {
     public enum ActorValue: Byte
     {

@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace SSEData
+namespace SSE
 {
     public struct Plugin
     {
@@ -35,7 +35,7 @@ namespace SSEData
                     default:
                         break;
                     case "WEAP":
-                        group.data
+                        group.records
                             .ForEach(record => weapons.Add(record.id, WEAPRecord.From(record, pluginInformation)));
                         break;
                 }

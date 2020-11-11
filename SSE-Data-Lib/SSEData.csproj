@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <RootNamespace>SSE_Data_Lib</RootNamespace>
+    <RootNamespace>SSEData</RootNamespace>
   </PropertyGroup>
 
 </Project>

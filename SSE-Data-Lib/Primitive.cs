@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SSEData
+namespace SSE
 {
     /// <summary>
     /// Zero terminated string.
@@ -49,6 +49,35 @@ namespace SSEData
             }
         }
     }
+
+    /// <summary>
+    /// A string prefixed with a byte length and terminated with a zero (\x00).
+    /// </summary>
+    public struct BZString
+	{
+        public string content;
+        public int length;
+        public static BZString From(Byte[] bytes, int offset)
+		{
+            var length = bytes[offset];
+            return new BZString()
+            {
+                content = Encoding.UTF8.GetString(bytes, offset + 1, length),
+                length = length
+            };
+		}
+	}
+    public struct Hash
+	{
+        public UInt64 value;
+        public static Hash From(Byte[] bytes, int offset)
+		{
+            return new Hash()
+            {
+                value = BitConverter.ToUInt64(bytes, offset),
+            };
+		}
+	}
     /// <summary>
     /// A ulong used to identify a data object.
     /// May refer to a data object from a mod or new object created in-game.
@@ -70,36 +99,6 @@ namespace SSEData
             {
                 id = BitConverter.ToUInt32(bytes, offset)
             };
-        }
-    }
-
-    /// <summary>
-    /// Helper methods to get find fields on records and cast them to appropriate types
-    /// </summary>
-    public static class RecordExtensions
-    {
-
-        public static T GetFirstField<T>(this Record record, string type, Func<byte[], T> castToValue)
-        {
-            var field = record.data
-                .Find(field => string.Equals(field.type, type, StringComparison.OrdinalIgnoreCase));
-            if (field.data == null)
-                return default(T);
-            return castToValue(field.data);
-        }
-
-        public static List<T> GetAllFields<T>(this Record record, string type, Func<byte[], T> castToValue)
-        {
-            var values = new List<T>();
-            for (int i = 0; i < record.data.Count; i++)
-            {
-                if (!string.Equals(record.data[i].type, type, StringComparison.OrdinalIgnoreCase))
-                    continue;
-                var field = record.data[i];
-                var value = castToValue(field.data);
-                values.Add(value);
-            }
-            return values;
         }
     }
 }

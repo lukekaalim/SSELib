@@ -1,5 +1,5 @@
 ﻿using System;
-namespace SSEData
+namespace SSE
 {
     /// <summary>
     /// https://en.uesp.net/wiki/Tes5Mod:Mod_File_Format/WEAP
