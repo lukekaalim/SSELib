@@ -29,6 +29,7 @@ namespace SSE
     /// </summary>
     public struct LString
     {
+        public bool isLocalizd;
         public UInt32 localizedId;
         public ZString content;
 
@@ -38,16 +39,25 @@ namespace SSE
             {
                 return new LString()
                 {
+                    isLocalizd = true,
                     localizedId = BitConverter.ToUInt32(bytes, 0)
                 };
             } else
             {
                 return new LString()
                 {
+                    isLocalizd = false,
                     content = ZString.From(bytes)
                 };
             }
         }
+
+        public string GetResolvedContent(StringTable table)
+		{
+            if (!isLocalizd)
+                return content.content;
+            return table.strings[localizedId];
+		}
     }
 
     /// <summary>
@@ -62,7 +72,7 @@ namespace SSE
             var length = bytes[offset];
             return new BZString()
             {
-                content = Encoding.UTF8.GetString(bytes, offset + 1, length),
+                content = Encoding.UTF8.GetString(bytes, offset + 1, length - 1),
                 length = length
             };
 		}

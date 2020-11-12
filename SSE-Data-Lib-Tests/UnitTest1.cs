@@ -16,10 +16,13 @@ namespace SSE_Data_Lib_Tests
         [TestMethod]
         public async Task TestArchive()
         {
-			using var stream = File.OpenRead("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Skyrim Special Edition\\Data\\Skyrim - Interface.bsa");
-			await using var archive = await SSE.Archive105.Open(stream);
+			var archive = await SSE.Archive.Open("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Skyrim Special Edition\\Data\\Skyrim - Interface.bsa");
+            var dlstrings = await archive.Read("strings\\skyrim_english.dlstrings");
+            var ilstrings = await archive.Read("strings\\skyrim_english.ilstrings");
+            var strings = await archive.Read("strings\\skyrim_english.strings");
 
-			Assert.AreEqual("BSA\0", archive.fileId);
+            var table = SSE.StringTable.ParseNullTerminated(strings);
+            Assert.AreEqual("BSA\0", archive.header.fileId);
 		}
     }
 }
