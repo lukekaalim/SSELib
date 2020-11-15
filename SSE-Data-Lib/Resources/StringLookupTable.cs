@@ -4,11 +4,11 @@ using System.Text;
 
 namespace SSE
 {
-	public struct StringTable
+	public struct StringLookupTable
 	{
 		public Dictionary<UInt32, string> strings;
 
-		public static StringTable ParseNullTerminated(Byte[] bytes)
+		public static StringLookupTable ParseNullTerminated(Byte[] bytes)
 		{
 			UInt32 count = BitConverter.ToUInt32(bytes, 0);
 			UInt32 dataSize = BitConverter.ToUInt32(bytes, 4);
@@ -21,16 +21,16 @@ namespace SSE
 				var stringOffset = dataStartOffset + BitConverter.ToUInt32(bytes, entryOffset + 4);
 				// todo: we lose some data here by converting the uint to int... :\
 				var stringEnd = Array.IndexOf(bytes, (Byte)0, (int)stringOffset);
-				var stringLength = stringEnd - stringOffset;
+				var stringLength = (stringEnd == -1) ? bytes.Length - stringOffset : stringEnd - stringOffset;
 
 				strings.Add(stringID, Encoding.UTF8.GetString(bytes, (int)stringOffset, (int)(stringLength)));
 			}
-			return new StringTable()
+			return new StringLookupTable()
 			{
 				strings = strings,
 			};
 		}
-		public static StringTable ParseLengthPrefixedy(Byte[] bytes)
+		public static StringLookupTable ParseLengthPrefixedy(Byte[] bytes)
 		{
 			UInt32 count = BitConverter.ToUInt32(bytes, 0);
 			UInt32 dataSize = BitConverter.ToUInt32(bytes, 4);
@@ -47,7 +47,7 @@ namespace SSE
 
 				strings.Add(stringID, Encoding.UTF8.GetString(bytes, (int)stringOffset, (int)(stringLength)));
 			}
-			return new StringTable()
+			return new StringLookupTable()
 			{
 				strings = strings,
 			};

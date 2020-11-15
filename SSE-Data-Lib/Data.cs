@@ -3,30 +3,79 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace SSE
 {
-	public class Data: IAsyncDisposable
+	public class Data
 	{
-		DirectoryInfo dataDirectory;
-		DirectoryInfo profileDirectory;
+		Profile profile;
+		List<Plugin> plugins;
+		List<Archive> archives;
 
-		static string[] defaultPlugins = new string[] { "skyrim.esm", "update.esm", "dawnguard.esm", "hearthfires.esm", "dragonborn.esm" };
+		public Dictionary<string, StringLookupTable> stringTables;
+		public ResourceLookupTable resources;
 
-		public async Task<Data> Open(DirectoryInfo dataDirectory, DirectoryInfo profileDirectory)
+		public static async Task<Data> Open(DirectoryInfo dataDirectory, DirectoryInfo profileDirectory)
 		{
-			FileInfo pluginOrderFile = new FileInfo(Path.Combine(profileDirectory.FullName, "plugins.txt"));
-			
+			Profile profile = await Profile.Read(profileDirectory);
+
+			FileInfo[] filesInDirectory = dataDirectory.GetFiles();
+
+			List<Plugin> plugins = await profile.loadOrder.plugins
+				.Select(pluginName => new FileInfo(Path.Combine(dataDirectory.FullName, pluginName)))
+				.ToAsyncEnumerable()
+				.SelectAwait(file => new ValueTask<Plugin>(Plugin.Load(file)))
+				.ToListAsync();
+
+			List<Archive> archives = await plugins
+				.SelectMany(plugin => filesInDirectory.Where(file =>
+					file.Name.StartsWith(Path.GetFileNameWithoutExtension(plugin.pluginFile.Name), StringComparison.OrdinalIgnoreCase)
+					&& string.Equals(file.Extension, ".bsa", StringComparison.OrdinalIgnoreCase)
+				))
+				.ToAsyncEnumerable()
+				.SelectAwait(async archivePath => await Archive.Open(archivePath))
+				.ToListAsync();
+
+			ResourceLookupTable resources = new ResourceLookupTable(archives, dataDirectory);
+			Dictionary<string, StringLookupTable> stringTables = await plugins
+				.ToAsyncEnumerable()
+				.SelectAwait(async plugin =>
+					(
+						plugin,
+						StringLookupTable.ParseNullTerminated(
+							await resources.GetFileAsync(
+								$"strings\\{Path.GetFileNameWithoutExtension(plugin.pluginFile.Name)}_english.strings"
+							)
+						)
+					)
+				)
+				.ToDictionaryAsync(k => Path.GetFileNameWithoutExtension(k.plugin.pluginFile.Name), k => k.Item2);
+
 			return new Data()
 			{
-				dataDirectory = dataDirectory,
-				profileDirectory = profileDirectory
+				profile = profile,
+				plugins = plugins,
+				archives = archives,
+				resources = resources,
+				stringTables = stringTables
 			};
 		}
 
-		public ValueTask DisposeAsync()
+		public async Task<Dictionary<UInt32, (UInt32, Plugin.Record, Plugin)>> GetAllRecordsOfType(string recordType)
 		{
-			throw new NotImplementedException();
+			var records = await plugins
+				.ToAsyncEnumerable()
+				.SelectManyAwait(async plugin =>
+					plugin
+					.EnumerateGroupRecords(recordType)
+					.Select(record => (record.id.ResolveFormID(profile.loadOrder, plugin), record, plugin)))
+				.ToListAsync();
+			var dictionary = records
+				.ToLookup(entry => entry.Item1)
+				.ToDictionary(lookup => lookup.Key, lookup => lookup.Last());
+
+			return dictionary;
 		}
 	}
 }

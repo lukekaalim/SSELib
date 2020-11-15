@@ -40,7 +40,7 @@ namespace SSE_Data_Lib_Tests
             var ilstrings = await archive.Read("strings\\skyrim_english.ilstrings");
             var strings = await archive.Read("strings\\skyrim_english.strings");
 
-            var table = SSE.StringTable.ParseNullTerminated(strings);
+            var table = SSE.StringLookupTable.ParseNullTerminated(strings);
             Assert.AreEqual("BSA\0", archive.header.fileId);
 		}
     }

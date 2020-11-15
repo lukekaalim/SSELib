@@ -36,19 +36,22 @@ namespace SSE
             };
         }
 
-        public async Task<List<Record>> ReadGroupRecordsAsync(string recordType)
-		{
-            using var stream = pluginFile.OpenRead();
-            (int offset, Group group) = groupTable.GetLookupReference(recordType);
+        public async ValueTask<List<Record>> ReadGroupRecordsAsync(string recordType)
+        {
+            (int offset, Group? group) = groupTable.GetLookupReference(recordType);
+            var records = new List<Record>();
 
+            if (!group.HasValue)
+                return records;
+
+            using var stream = pluginFile.OpenRead();
             stream.Seek(offset, SeekOrigin.Begin);
 
-            Byte[] bytes = new Byte[group.groupSize];
+            Byte[] bytes = new Byte[group.Value.groupSize];
             await stream.ReadAsync(bytes);
 
             int parsedBytes = 0;
-            var records = new List<Record>();
-            while (parsedBytes < group.DataSize)
+            while (parsedBytes < group.Value.DataSize)
             {
                 var record = new Record(bytes, parsedBytes);
                 records.Add(record);
@@ -60,17 +63,16 @@ namespace SSE
         public async IAsyncEnumerable<Record> EnumerateGroupRecords(string recordType)
         {
             using var stream = pluginFile.OpenRead();
-            (int offset, Group group) = groupTable.GetLookupReference(recordType);
+            (int offset, Group? group) = groupTable.GetLookupReference(recordType);
+
+            if (!group.HasValue)
+                yield break;
 
             stream.Seek(offset, SeekOrigin.Begin);
 
-            while (stream.Position - offset < group.DataSize)
+            while (stream.Position - offset < group.Value.DataSize)
                 yield return await Record.Read(stream);
-        }
-
-        public IAsyncEnumerable<WEAPRecord> GetWEAPRecords()
-        {
-            return EnumerateGroupRecords("WEAP").Select(record => WEAPRecord.From(record, pluginRecord));
+            yield break;
         }
     }
 }

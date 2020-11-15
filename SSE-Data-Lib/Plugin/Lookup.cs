@@ -38,8 +38,10 @@ namespace SSE
 				}
 			}
 
-			public (int, Group) GetLookupReference(string type)
+			public (int, Group?) GetLookupReference(string type)
 			{
+				if (!indexByRecordType.ContainsKey(type))
+					return (0, null);
 				var index = indexByRecordType[type];
 				var offset = (int)(offsetByIndex[index] + groupStartOffset + Group.fixedSize);
 				var group = groups[index];

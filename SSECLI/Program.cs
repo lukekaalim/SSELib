@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using SSE;
+using System.Linq;
 
 namespace SSECLI
 {
@@ -23,7 +24,7 @@ namespace SSECLI
                 }
                 var plugin = await Plugin.Load(new System.IO.FileInfo(pathToPlugin));
                 var archive = await Archive.Open("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Skyrim Special Edition\\Data\\Skyrim - Interface.bsa");
-                var table = StringTable.ParseNullTerminated(await archive.Read("strings\\skyrim_english.strings"));
+                var table = StringLookupTable.ParseNullTerminated(await archive.Read("strings\\skyrim_english.strings"));
 
                 Console.WriteLine("Plugin");
                 Console.WriteLine("\tName: " + plugin.pluginRecord.cnam.content);
@@ -36,7 +37,7 @@ namespace SSECLI
                 }
 
                 Console.WriteLine("Weapons:");
-                await foreach (WEAPRecord weapon in plugin.GetWEAPRecords())
+                await foreach (WEAPRecord weapon in plugin.EnumerateGroupRecords("WEAP").Select(record => WEAPRecord.From(record, plugin.pluginRecord)))
                 {
                     Console.WriteLine("\tName: " + weapon.full.GetResolvedContent(table));
                     Console.WriteLine("\t\tDamage: " + weapon.data.damage);

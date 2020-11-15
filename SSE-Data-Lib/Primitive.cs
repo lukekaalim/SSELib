@@ -52,7 +52,7 @@ namespace SSE
             }
         }
 
-        public string GetResolvedContent(StringTable table)
+        public string GetResolvedContent(StringLookupTable table)
 		{
             if (!isLocalizd)
                 return content.content;
@@ -94,6 +94,8 @@ namespace SSE
     /// </summary>
     public struct FormID
     {
+        public sbyte MasterIndex => (sbyte)(id >> (8 * 3));
+
         public static uint Size = 4;
         public UInt32 id;
 
@@ -110,6 +112,29 @@ namespace SSE
             {
                 id = BitConverter.ToUInt32(bytes, offset)
             };
+        }
+
+        /// <summary>
+        /// Use the Load Order to find the canonical FormID
+        /// </summary>
+        /// <param name="order"></param>
+        /// <param name="plugin"></param>
+        /// <returns></returns>
+        public UInt32 ResolveFormID(LoadOrder order, Plugin plugin)
+		{
+            // If the "master index" is not in the "master range", then this
+            // is an "original" record
+            if (MasterIndex >= plugin.pluginRecord.mast.Count)
+                return id;
+            var masterPluginName = plugin.pluginRecord.mast[MasterIndex].content;
+
+            sbyte masterIndex = (sbyte)order
+                .plugins
+                .FindIndex(pluginName =>
+                    String.Equals(pluginName, masterPluginName, StringComparison.OrdinalIgnoreCase));
+
+            return (id & 0x00FFFFFF) | (UInt32)(masterIndex << (8 * 3));
+
         }
     }
 }
