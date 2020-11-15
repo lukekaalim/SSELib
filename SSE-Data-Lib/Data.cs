@@ -1,15 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace SSE
 {
-	public struct Data: IAsyncDisposable
+	public class Data: IAsyncDisposable
 	{
-		public async Task<Data> Open(string directory)
+		DirectoryInfo dataDirectory;
+		DirectoryInfo profileDirectory;
+
+		static string[] defaultPlugins = new string[] { "skyrim.esm", "update.esm", "dawnguard.esm", "hearthfires.esm", "dragonborn.esm" };
+
+		public async Task<Data> Open(DirectoryInfo dataDirectory, DirectoryInfo profileDirectory)
 		{
-			return new Data();
+			FileInfo pluginOrderFile = new FileInfo(Path.Combine(profileDirectory.FullName, "plugins.txt"));
+			
+			return new Data()
+			{
+				dataDirectory = dataDirectory,
+				profileDirectory = profileDirectory
+			};
 		}
 
 		public ValueTask DisposeAsync()

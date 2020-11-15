@@ -94,6 +94,7 @@ namespace SSE
     /// </summary>
     public struct FormID
     {
+        public static uint Size = 4;
         public UInt32 id;
 
         public static FormID From(Byte[] bytes)

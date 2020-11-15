@@ -21,22 +21,22 @@ namespace SSECLI
                     Console.WriteLine("This file doesnt exist");
                     return;
                 }
-                var plugin = await Plugin.Load(pathToPlugin);
+                var plugin = await Plugin.Load(new System.IO.FileInfo(pathToPlugin));
                 var archive = await Archive.Open("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Skyrim Special Edition\\Data\\Skyrim - Interface.bsa");
                 var table = StringTable.ParseNullTerminated(await archive.Read("strings\\skyrim_english.strings"));
 
                 Console.WriteLine("Plugin");
-                Console.WriteLine("\tName: " + plugin.pluginInformation.cnam.content);
-                Console.WriteLine("\tDescription: " + plugin.pluginInformation.snam.content);
+                Console.WriteLine("\tName: " + plugin.pluginRecord.cnam.content);
+                Console.WriteLine("\tDescription: " + plugin.pluginRecord.snam.content);
 
                 Console.WriteLine("\tMasters:");
-                foreach (ZString master in plugin.pluginInformation.mast)
+                foreach (ZString master in plugin.pluginRecord.mast)
                 {
                     Console.WriteLine("\t\t" + master.content);
                 }
 
                 Console.WriteLine("Weapons:");
-                foreach (WEAPRecord weapon in plugin.weapons.Values)
+                await foreach (WEAPRecord weapon in plugin.GetWEAPRecords())
                 {
                     Console.WriteLine("\tName: " + weapon.full.GetResolvedContent(table));
                     Console.WriteLine("\t\tDamage: " + weapon.data.damage);
