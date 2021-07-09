@@ -1,7 +1,11 @@
 ﻿using System;
+using System.Text;
 using System.Threading.Tasks;
-using SSE;
 using System.Linq;
+using System.Collections.Generic;
+using SSE.TESVPlugin;
+using SSE.TESVPlugin.Reader;
+using SSE.TESVRecord;
 
 namespace SSECLI
 {
@@ -11,39 +15,50 @@ namespace SSECLI
         {
             try
             {
-                if (args.Length < 1)
-                {
-                    Console.WriteLine("Please include path to ESM file");
-                    return;
-                }
-                var pathToPlugin = args[0];
-                if (!System.IO.File.Exists(pathToPlugin))
-                {
-                    Console.WriteLine("This file doesnt exist");
-                    return;
-                }
-                var plugin = await Plugin.Load(new System.IO.FileInfo(pathToPlugin));
-                var archive = await Archive.Open("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Skyrim Special Edition\\Data\\Skyrim - Interface.bsa");
-                var table = StringLookupTable.ParseNullTerminated(await archive.Read("strings\\skyrim_english.strings"));
+                var path = @"C:\Program Files (x86)\Steam\steamapps\common\Skyrim Special Edition\Data\Skyrim.esm";
+                var file = new System.IO.FileInfo(path);
+                using var stream = file.OpenRead();
+                var parser = await PluginStreamReader.LoadStream(stream);
 
-                Console.WriteLine("Plugin");
-                Console.WriteLine("\tName: " + plugin.pluginRecord.cnam.content);
-                Console.WriteLine("\tDescription: " + plugin.pluginRecord.snam.content);
+                var (cell, cellGroup) = await parser.ReadCell(0x00050F1Eu);
+                var persisted = cellGroup.Groups.Find(g => g.Header.GroupType == GroupHeader.GroupTypes.CellPersistentChildren);
+                var temporary = cellGroup.Groups.Find(g => g.Header.GroupType == GroupHeader.GroupTypes.CellTemporaryChildren);
 
-                Console.WriteLine("\tMasters:");
-                foreach (ZString master in plugin.pluginRecord.mast)
-                {
-                    Console.WriteLine("\t\t" + master.content);
+                var childrenReferences = persisted.Records
+                    .Concat(temporary.Records)
+                    .Where(r => r.Header.Type == "REFR")
+                    .Select(r => new REFRRecord(r))
+                    .ToList();
+                var children = new List<Record>();
+                foreach (var refRecord in childrenReferences)
+				{
+                    children.Add(await parser.ReadRecordFromFormID(refRecord.Name.formId));
                 }
+                foreach (var child in children) {
+                    var edidIndex = child.Fields.FindIndex(f => f.Type == "EDID");
+                    if (edidIndex != -1)
+                    {
+                        Console.WriteLine($"{child.Header.Id}: {child.Header.Type} ({Encoding.UTF8.GetString(child.Fields[edidIndex].DataBytes)})");
+                    } else
+					{
+                        Console.WriteLine($"{child.Header.Id}: {child.Header.Type}");
+                    }
 
-                Console.WriteLine("Weapons:");
-                await foreach (WEAPRecord weapon in plugin.EnumerateGroupRecords("WEAP").Select(record => WEAPRecord.From(record, plugin.pluginRecord)))
-                {
-                    Console.WriteLine("\tName: " + weapon.full.GetResolvedContent(table));
-                    Console.WriteLine("\t\tDamage: " + weapon.data.damage);
-                    Console.WriteLine("\t\tWeight: " + weapon.data.weight);
-                    Console.WriteLine("\t\tValue: " + weapon.data.value);
                 }
+                //var result = await parser.ReadRecordFromFormID(793987);
+
+                /*
+                var options = new System.Text.Json.JsonSerializerOptions();
+                options.WriteIndented = true;
+                options.IgnoreReadOnlyProperties = false;
+                var json = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(result, options);
+                using var outFile = new System.IO.FileInfo(@"C:\Users\lukek\Desktop\skyrim.json").Open(
+                    System.IO.FileMode.Create,
+                    System.IO.FileAccess.Write
+                );
+                await outFile.WriteAsync(json, 0, json.Length);
+                */
+                Console.WriteLine("DONE");
             } catch (Exception error)
             {
                 Console.WriteLine("There was an unexpected error");

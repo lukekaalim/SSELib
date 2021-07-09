@@ -2,8 +2,8 @@
 
 namespace SSE
 {
-    public enum ActorValue: Byte
-    {
+    public enum ActorValue: byte
+	{
         Aggression = 0,
         OneHanded = 6,
         TwoHanded = 7,

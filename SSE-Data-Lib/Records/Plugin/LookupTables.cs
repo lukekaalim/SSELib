@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SSE
 {
-	public partial class Plugin
+	public partial class SSEPlugin
 	{
 		/// <summary>
 		/// Accelerate the lookup of GRUP records

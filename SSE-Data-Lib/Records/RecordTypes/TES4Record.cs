@@ -61,7 +61,7 @@ namespace SSE
         /// </summary>
         public List<FormID> onam;
 
-        public static TES4Record From(Plugin.Record record)
+        public static TES4Record From(SSEPlugin.Record record)
         {
             return new TES4Record()
             {

@@ -8,7 +8,7 @@ namespace SSE
     /// </summary>
     public static class RecordExtensions
     {
-        public static T GetFirstField<T>(this Plugin.Record record, string type, Func<byte[], T> castToValue)
+        public static T GetFirstField<T>(this SSEPlugin.Record record, string type, Func<byte[], T> castToValue)
         {
             var field = record.data
                 .Find(field => string.Equals(field.type, type, StringComparison.OrdinalIgnoreCase));
@@ -17,7 +17,7 @@ namespace SSE
             return castToValue(field.data);
         }
 
-        public static List<T> GetAllFields<T>(this Plugin.Record record, string type, Func<byte[], T> castToValue)
+        public static List<T> GetAllFields<T>(this SSEPlugin.Record record, string type, Func<byte[], T> castToValue)
         {
             var values = new List<T>();
             for (int i = 0; i < record.data.Count; i++)

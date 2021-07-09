@@ -7,15 +7,22 @@ using System.Linq;
 
 namespace SSE
 {
-	public partial class Plugin
+	public partial class SSEPlugin
     {
+        public string Name => Path.GetFileNameWithoutExtension(pluginFile.Name);
+        public string Filename => pluginFile.Name;
+        public List<string> Masters => pluginRecord.mast
+            .Select(masterString => masterString.content)
+            .ToList();
+
+        public string GetMasterName(int index) => pluginRecord.mast[index].content;
 
         public FileInfo pluginFile;
 
         public TES4Record pluginRecord;
         public GroupLookupTable groupTable;
 
-        public static async Task<Plugin> Load(FileInfo pluginFile)
+        public static async Task<SSEPlugin> Load(FileInfo pluginFile)
         {
             using var stream = pluginFile.OpenRead();
 
@@ -28,7 +35,7 @@ namespace SSE
             var groups = await Group.ReadAllTopLevelGroups(stream, pluginRecord);
             var groupTable = new GroupLookupTable(groups, groupStartOffset);
 
-            return new Plugin()
+            return new SSEPlugin()
             {
                 pluginFile = pluginFile,
                 pluginRecord = pluginRecord,

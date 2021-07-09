@@ -2,7 +2,7 @@
 
 namespace SSE
 {
-	public partial class Plugin
+	public partial class SSEPlugin
 	{
         public struct VersionControlInfo
         {

@@ -278,7 +278,7 @@ namespace SSE
         }
         public DNAMRecord dnam;
 
-        public static WEAPRecord From(Plugin.Record record, TES4Record plugin)
+        public static WEAPRecord From(SSEPlugin.Record record, TES4Record plugin)
         {
             return new WEAPRecord()
             {

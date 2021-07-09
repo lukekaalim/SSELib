@@ -6,6 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SSE-Data-Lib\SSEData.csproj" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TESVArchive\TESVArchive.csproj" />
+    <ProjectReference Include="..\TESVPlugin\TESVPlugin.csproj" />
+    <ProjectReference Include="..\TESVRecords\TESVRecord.csproj" />
   </ItemGroup>
 </Project>

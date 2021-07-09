@@ -1,31 +1,41 @@
 ﻿using System;
-using System.Text;
-using System.Collections.Immutable;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace SSE
+namespace SSE.Plugin
 {
-	public partial class Plugin
+	public struct IntVector2
 	{
-		/// <summary>
-		/// https://en.uesp.net/wiki/Tes5Mod:Mod_File_Format#Groups
-		/// </summary>
-		public readonly struct Group
-		{
-			public static uint fixedSize = 20 + VersionControlInfo.Size;
-			public static string type = "GRUP";
-			public uint DataSize => groupSize - fixedSize;
-			public string RecordType { get { return Encoding.UTF8.GetString(label); } }
+		public int X { get; set; }
+		public int Y { get; set; }
 
-			public readonly UInt32 groupSize;
-			/// <summary>
-			/// Label means different things based on group type,
-			/// so we store it as a byte array until we inspect the group type
-			/// </summary>
-			public readonly Byte[] label;
-			public enum GroupType: Int32
+		public IntVector2(int X, int Y)
+		{
+			this.X = X;
+			this.Y = Y;
+		}
+	}
+
+
+	public struct Group
+	{
+		public struct GroupHeader
+		{
+			public static uint HeaderSize = 24;
+			public static string type = "GRUP";
+			public uint DataSize => GroupSize - HeaderSize;
+
+			public string RecordType => Encoding.UTF8.GetString(label);
+			public int BlockNumber => BitConverter.ToInt32(label);
+			public int SubBlockNumber => BitConverter.ToInt32(label);
+			public IntVector2 Grid => new IntVector2(BitConverter.ToInt16(label), BitConverter.ToInt16(label, 2));
+
+			public uint GroupSize { get; set; }
+			public byte[] label;
+			public enum GroupTypes : int
 			{
 				RecordType = 0,
 				WorldChildren = 1,
@@ -38,36 +48,51 @@ namespace SSE
 				CellPersistentChildren = 8,
 				CellTemporaryChildren = 9
 			}
-			public readonly GroupType groupType; // 16
-			public readonly VersionControlInfo versionControlInfo;
-			public readonly UInt32 unknown;
-
-			public static async Task<List<Group>> ReadAllTopLevelGroups(Stream stream, TES4Record pluginRecord)
+			public GroupTypes GroupType { get; set; } // 16
+			public string GroupTypeName => GroupType.ToString();
+			//public VersionControlInfo versionControlInfo;
+			public uint unknown;
+			public static async Task<GroupHeader> Read(Stream stream)
 			{
-				List<Group> groups = new List<Group>();
-				// read until the end of the stream
-				while (stream.Position < stream.Length)
-				{
-					Byte[] bytes = new byte[fixedSize];
-					await stream.ReadAsync(bytes, 0, (int)fixedSize);
-
-					var group = new Group(bytes, 0);
-					groups.Add(group);
-
-					stream.Seek(group.groupSize - fixedSize, SeekOrigin.Current);
-				}
-				return groups;
+				var headerBytes = new byte[HeaderSize];
+				await stream.ReadAsync(headerBytes);
+				return Parse(headerBytes);
 			}
 
-			public Group(Byte[] bytes, int offset)
+			public static GroupHeader Parse(byte[] bytes, long offset = 0)
 			{
 				// first 4 bytes are the type, which should be "GRUP"
-				groupSize = BitConverter.ToUInt32(bytes, offset + 4);
-				label = bytes[(offset + 8)..(offset + 12)];
-				groupType = (GroupType)BitConverter.ToInt32(bytes, offset + 12);
-				versionControlInfo = VersionControlInfo.Parse(bytes, offset + 16);
-				unknown = BitConverter.ToUInt32(bytes, offset + 20);
+				var groupSize = BitConverter.ToUInt32(bytes, (int)(offset + 4));
+				var label = bytes[(Index)(offset + 8)..(Index)(offset + 12)];
+				var groupType = (GroupTypes)BitConverter.ToInt32(bytes, (int)(offset + 12));
+				//var versionControlInfo = VersionControlInfo.Parse(bytes, offset + 16);
+				var unknown = BitConverter.ToUInt32(bytes, (int)(offset + 20));
+
+				return new GroupHeader()
+				{
+					GroupSize = groupSize,
+					label = label,
+					GroupType = groupType,
+					//versionControlInfo = versionControlInfo,
+					unknown = unknown
+				};
 			}
+		}
+
+		public GroupHeader Header { get; set; }
+		public List<Record> Records { get; set; }
+		public List<Group> Groups { get; set; }
+
+		public static Group Parse(byte[] groupBytes, long offset = 0)
+		{
+			var header = GroupHeader.Parse(groupBytes, offset);
+			var (records, groups) = Record.ParseAll(groupBytes, GroupHeader.HeaderSize + offset, (int)header.DataSize);
+
+			return new Group() {
+				Header = header,
+				Records = records,
+				Groups = groups
+			};
 		}
 	}
 }

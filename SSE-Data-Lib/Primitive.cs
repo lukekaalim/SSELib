@@ -2,6 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 
 namespace SSE
 {
@@ -52,42 +53,100 @@ namespace SSE
             }
         }
 
-        public string GetResolvedContent(StringLookupTable table)
+        public string GetResolvedContent(StringTable table)
 		{
             if (!isLocalizd)
                 return content.content;
-            return table.strings[localizedId];
+            throw new NotImplementedException();
 		}
     }
 
     /// <summary>
     /// A string prefixed with a byte length and terminated with a zero (\x00).
     /// </summary>
-    public struct BZString
+    public readonly struct BZString
 	{
-        public string content;
-        public int length;
-        public static BZString From(Byte[] bytes, int offset)
-		{
-            var length = bytes[offset];
-            return new BZString()
+        public readonly string content;
+        public readonly int length;
+        public BZString(byte[] bytes, int offset)
+        {
+            length = bytes[offset];
+            content = Encoding.UTF8.GetString(bytes, offset + 1, length - 1);
+        }
+        public static explicit operator string(BZString b) => b.content;
+    }
+
+    public readonly struct BSAHash
+	{
+        public static int ByteSize => sizeof(ulong);
+        public readonly ulong value;
+        static uint GetMaskForExtension(string extension) => extension switch
+        {
+            ".kf" => 0x80,
+            ".nif" => 0x8000,
+            ".dds" => 0x8080,
+            ".wav" => 0x80000000,
+            _ => 0x0,
+        };
+
+        public BSAHash(byte[] bytes, int offset) => value = BitConverter.ToUInt64(bytes, offset);
+        public BSAHash(ulong value) => this.value = value;
+        public static BSAHash HashPath(string name)
+        {
+            name = name.Replace('/', '\\');
+            return HashFile(Path.ChangeExtension(name, null), Path.GetExtension(name));
+        }
+        public static BSAHash HashFile(string name, string extension)
+        {
+            name = name.ToLowerInvariant();
+            extension = extension.ToLowerInvariant();
+            var hashBytes = new byte[]
             {
-                content = Encoding.UTF8.GetString(bytes, offset + 1, length - 1),
-                length = length
+                (byte)(name.Length == 0 ? '\0' : name[name.Length - 1]),
+                (byte)(name.Length < 3 ? '\0' : name[name.Length - 2]),
+                (byte)name.Length,
+                (byte)name[0]
             };
+            var hash1 = BitConverter.ToUInt32(hashBytes, 0) | GetMaskForExtension(extension);
+
+            uint hash2 = 0;
+            for (var i = 1; i < name.Length - 2; i++)
+                hash2 = hash2 * 0x1003f + (byte)name[i];
+
+            uint hash3 = 0;
+            for (var i = 0; i < extension.Length; i++)
+                hash3 = hash3 * 0x1003f + (byte)extension[i];
+
+            return new BSAHash((((ulong)(hash2 + hash3)) << 32) + hash1);
+        }
+
+        public static implicit operator ulong(BSAHash h) => h.value;
+    }
+    public readonly struct LocalFormID
+    {
+        public readonly UInt32 formId;
+        public LocalFormID(Byte[] bytes, int offset) => formId = BitConverter.ToUInt32(bytes, offset);
+
+        public UInt32 RecordID => formId & 0x00FFFFFF;
+        public UInt32 MasterIndex => formId >> (8 * 3);
+
+		public ResolvedFormID Resolve(LoadOrder order, SSEPlugin parent)
+		{
+            var master = parent.GetMasterName((int)MasterIndex);
+            var masterIndex = (UInt32)order.plugins.FindIndex(plugin =>
+                string.Equals(master, plugin, StringComparison.OrdinalIgnoreCase));
+
+            return new ResolvedFormID(RecordID, masterIndex);
 		}
 	}
-    public struct Hash
-	{
-        public UInt64 value;
-        public static Hash From(Byte[] bytes, int offset)
-		{
-            return new Hash()
-            {
-                value = BitConverter.ToUInt64(bytes, offset),
-            };
-		}
-	}
+    public readonly struct ResolvedFormID
+    {
+        public readonly UInt32 recordId;
+        public readonly UInt32 masterIndex;
+        public ResolvedFormID(UInt32 recordId, UInt32 masterIndex) =>
+            (this.recordId, this.masterIndex) = (recordId, masterIndex);
+    }
+
     /// <summary>
     /// A ulong used to identify a data object.
     /// May refer to a data object from a mod or new object created in-game.
@@ -120,7 +179,7 @@ namespace SSE
         /// <param name="order"></param>
         /// <param name="plugin"></param>
         /// <returns></returns>
-        public UInt32 ResolveFormID(LoadOrder order, Plugin plugin)
+        public UInt32 ResolveFormID(LoadOrder order, SSEPlugin plugin)
 		{
             // If the "master index" is not in the "master range", then this
             // is an "original" record
