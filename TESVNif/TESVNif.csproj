@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="NIF.xml" />
+    <None Remove="BlockStructure\" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="NIF.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="BlockStructure\" />
+  </ItemGroup>
+</Project>
