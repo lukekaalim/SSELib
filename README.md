@@ -1,7 +1,15 @@
-# SSE Lib
+# The Elder Scrolls V: Skyrim Special Edition Libraries
 
-## SSEData
-Reads record information from plugin files (esm, esp, esl).
+A collection of of dotnet libraries to read and understand the data directory of TESV: SSE.
 
-## SSENif
-Reads model information from nif (.nif) files.
+## SSE.TESVNif
+Reading .nif format for models and animations.
+
+## SSE.TESVRecord
+Contains defenitions for plugin records.
+
+## SSE.TESVPlugin
+Reading .esm/.esl/.esp plugin files.
+
+## SSE.TESVArchive
+Reading .bsa archive files.
