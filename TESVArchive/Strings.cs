@@ -9,6 +9,7 @@ namespace SSE.TESVArchive
 	{
 		public readonly string content;
 		public readonly int length;
+		public int ByteLength => length + 1;
 		public BZString(byte[] bytes, int offset)
 		{
 			length = bytes[offset];

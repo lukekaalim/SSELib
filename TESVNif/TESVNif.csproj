@@ -2,16 +2,21 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>SSE.TESVNif</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="NIF.xml" />
     <None Remove="BlockStructure\" />
+    <None Remove="BlockStructure\Expressions\" />
+    <None Remove="BlockStructure\Nodes\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="NIF.xml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="BlockStructure\" />
+    <Folder Include="BlockStructure\Logic\" />
+    <Folder Include="BlockStructure\Schemas\" />
   </ItemGroup>
 </Project>

@@ -91,7 +91,7 @@ namespace SSE.TESVArchive
 			var fileRecords = new List<FileRecord>(fileCount);
 			for (int i = 0; i < fileCount; i++)
             {
-				var recordOffset = byteOffset + folderName.length + (i * FileRecord.ByteSize);
+				var recordOffset = byteOffset + folderName.ByteLength + (i * FileRecord.ByteSize);
 				var record = FileRecord.Parse(blockBytes, recordOffset);
 				fileRecords.Add(record);
 			}
@@ -117,13 +117,14 @@ namespace SSE.TESVArchive
 		public static FileRecord Parse(byte[] recordBytes, int offset)
         {
 			var nameHash = BSAHash.Parse(recordBytes, offset);
-			var sizeAndCompression = BitConverter.ToUInt32(recordBytes, offset + 8);
-			var dataOffset = BitConverter.ToUInt32(recordBytes, offset + 12);
+			var sizeAndCompression = BitConverter.ToUInt32(recordBytes, offset + BSAHash.HashSize);
+			var dataOffset = BitConverter.ToUInt32(recordBytes, offset + BSAHash.HashSize + 4);
 			return new FileRecord()
 			{
 				NameHash = nameHash,
 				SizeAndCompression = sizeAndCompression,
-				DataOffset = dataOffset,
+				// why???
+				DataOffset = dataOffset + 17,
 			};
 		}
 	}
@@ -158,7 +159,7 @@ namespace SSE.TESVArchive
 			stream.Seek(folder.FileRecordOffset - header.TotalFileNameLength, SeekOrigin.Begin);
 
 			var nameLength = stream.ReadByte();
-			var blockBytes = new byte[nameLength + folder.FileCount * FileRecord.ByteSize];
+			var blockBytes = new byte[nameLength + 1 + (folder.FileCount * FileRecord.ByteSize)];
 			await stream.ReadAsync(blockBytes, 1, blockBytes.Length - 1);
 			blockBytes[0] = (byte)nameLength;
 
@@ -237,7 +238,7 @@ namespace SSE.TESVArchive
 
 		public async Task<byte[]> ReadFile(FileRecord record)
         {
-			ArchiveStream.Seek(record.DataOffset, 0);
+			ArchiveStream.Seek(record.DataOffset, SeekOrigin.Begin);
 			var fileBytes = new byte[record.Size];
 			await ArchiveStream.ReadAsync(fileBytes, 0, fileBytes.Length);
 			return fileBytes;
