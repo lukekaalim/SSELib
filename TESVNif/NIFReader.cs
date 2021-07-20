@@ -8,6 +8,8 @@ using System.Xml.Linq;
 using System.Threading.Tasks;
 
 using SSE.TESVNif.BlockStructure;
+using SSE.TESVNif.Blocks;
+using SSE.TESVNif.Structures;
 
 namespace SSE.TESVNif
 {
@@ -15,9 +17,13 @@ namespace SSE.TESVNif
     {
         public class NIFFile
         {
-            public CompoundBlock Header { get; set; }
-            public List<Block> Blocks { get; set; }
-            public CompoundBlock Footer { get; set; }
+            public Header Header { get; set; }
+            public List<NiObject> Objects { get; set; }
+            public Footer Footer { get; set; }
+
+            public List<NiObject> Roots => Footer.Roots
+                .Select(r => Objects[r])
+                .ToList();
         }
 
         BlockStructureReader Reader { get; set; }
@@ -38,7 +44,7 @@ namespace SSE.TESVNif
                     var memStream = new MemoryStream(nifBytes);
                     var reader = new BlockStructureReader(doc, memStream);
 
-                    var headerString = (string)(reader.ReadSchemaByName("HeaderString") as BasicBlock).Value;
+                    var headerString = (string)(reader.ReadSchemaByName("HeaderString") as BasicData).Value;
                     var versionString = headerString.Substring(headerString
                         .ToList()
                         .FindLastIndex(c => !(char.IsDigit(c) || char.IsWhiteSpace(c) || c == '.')) + 1);
@@ -46,50 +52,64 @@ namespace SSE.TESVNif
                     memStream.Seek(0, SeekOrigin.Begin);
                     reader.Version = VersionParser.Parse(versionString.Trim());
 
-                    var header = reader.ReadSchemaByName("Header") as CompoundBlock;
+                    var file = new NIFFile();
 
-                    var blockTypes = (header.Fields["Block Types"] as ListBlock)
-                        .Contents
-                        .Select(r => ReadSizedString(r))
+                    file.Header = new Header((CompoundData)reader.ReadSchemaByName("Header"));
+
+                    reader.GlobalIdentifiers = file.Header.Globals;
+
+                    file.Objects = file.Header.Blocks
+                        .Select(block => reader.ReadSchemaByName(block.Type))
+                        .Select(data => ReadNiObject(file, (BlockData)data))
                         .ToList();
-                    var blockIndicies = (header.Fields["Block Type Index"] as ListBlock)
-                        .Contents
-                        .Select(r => (short)(r as BasicBlock).Value)
-                        .ToList();
-                    var blocks = blockIndicies.Select(i => blockTypes[i]).ToList();
-                    var globals = new Dictionary<string, BlockStructure.Logic.Value>()
-                    {
-                        { "Version", BlockStructure.Logic.Value.From(header.Fields["Version"]) },
-                        { "User Version", BlockStructure.Logic.Value.From(header.Fields["User Version"]) },
-                        { "BS Header", BlockStructure.Logic.Value.From(header.Fields["BS Header"]) },
-                    };
-                    reader.GlobalIdentifiers = globals;
 
-                    var children = new List<Block>();
-                    foreach (var block in blocks)
-                        children.Add(reader.ReadSchemaByName(block));
-                    var footer = reader.ReadSchemaByName("Footer") as CompoundBlock;
-
-                    return new NIFFile()
-                    {
-                        Header = header,
-                        Blocks = children,
-                        Footer = footer
-                    };
+                    file.Footer = new Footer((CompoundData)reader.ReadSchemaByName("Footer"));
+                    return file;
                 }
             }
         }
 
-        public static string ReadSizedString(Block result)
+        public static NiObject ReadNiObject(NIFFile file, BlockData data)
         {
-            if (result is CompoundBlock compound)
-                if (compound.Fields["Value"] is ListBlock charList)
-                    return new string(
-                        charList.Contents
-                            .Select(c => (char)(c as BasicBlock).Value)
-                            .ToArray()
-                    );
-            throw new Exception();
+            switch (data.Name)
+            {
+                case "BSFadeNode":
+                    return new BSFadeNode(file, data);
+                case "BSInvMarker":
+                    return new BSInvMarker(file, data);
+                case "BSXFlags":
+                    return new BSXFlags(file, data);
+                case "NiStringExtraData":
+                    return new NiStringExtraData(file, data);
+                case "bhkConvexVerticesShape":
+                    return new bhkConvexVerticesShape(file, data);
+                case "bhkRigidBody":
+                    return new bhkRigidBody(file, data);
+                case "bhkCollisionObject":
+                    return new bhkCollisionObject(file, data);
+                case "BSTriShape":
+                    return new BSTriShape(file, data);
+                case "BSEffectShaderProperty":
+                    return new BSEffectShaderProperty(file, data);
+                case "NiTriShape":
+                    return new NiTriShape(file, data);
+                case "NiTriShapeData":
+                    return new NiTriShapeData(file, data);
+                case "NiAlphaProperty":
+                    return new NiAlphaProperty(file, data);
+                case "BSLightingShaderProperty":
+                    return new BSLightingShaderProperty(file, data);
+                case "BSShaderTextureSet":
+                    return new BSShaderTextureSet(file, data);
+                case "bhkBoxShape":
+                    return new bhkBoxShape(file, data);
+                case "bhkConvexTransformShape":
+                    return new bhkConvexTransformShape(file, data);
+                case "bhkListShape":
+                    return new bhkListShape(file, data);
+                default:
+                    return new NiObject(file);
+            }
         }
     }
 }

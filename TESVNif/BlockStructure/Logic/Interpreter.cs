@@ -9,6 +9,7 @@ namespace SSE.TESVNif.BlockStructure.Logic
         public class State
         {
             public Dictionary<string, Value> Identifiers { get; set; }
+            public HashSet<string> EmptyIdentifiers { get; set; }
         }
 
         public static Value Interpret (Expression expression, State state = null)

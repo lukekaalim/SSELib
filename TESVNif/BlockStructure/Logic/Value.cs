@@ -31,11 +31,11 @@ namespace SSE.TESVNif.BlockStructure.Logic
         public static Value From(float value)
             => new FloatValue(value);
 
-        public static Value From(Block result)
+        public static Value From(Data result)
         {
             switch (result)
             {
-                case BasicBlock basic:
+                case BasicData basic:
                     switch (basic.Value)
                     {
                         case byte b:
@@ -57,13 +57,13 @@ namespace SSE.TESVNif.BlockStructure.Logic
                         default:
                             throw new Exception();
                     }
-                case CompoundBlock compound:
+                case CompoundData compound:
                     return new StructureValue(compound.Fields
-                        .Where(kv => kv.Value is BasicBlock || kv.Value is CompoundBlock)
+                        .Where(kv => kv.Value is BasicData || kv.Value is CompoundData)
                         .ToDictionary(kv => kv.Key, kv => From(kv.Value)));
-                case EnumBlock enumBlock:
+                case EnumData enumBlock:
                     return From(enumBlock.Value);
-                case ListBlock listBlock:
+                case ListData listBlock:
                     return null;
                 default:
                     throw new Exception();

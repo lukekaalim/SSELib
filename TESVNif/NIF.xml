@@ -3791,7 +3791,7 @@
         <field name="Has Vertices" type="bool" default="1">Is the vertex array present? (Always non-zero.)</field>
         <field name="Vertices" type="Vector3" arr1="Num Vertices" cond="Has Vertices">The mesh vertices.</field>
         <field name="Data Flags" type="NiGeometryDataFlags" ver1="10.0.1.0" vercond="!#BS202#" />
-        <field name="BS Data Flags" type="x" vercond="#BS202#" />
+        <field name="BS Data Flags" type="BSGeometryDataFlags" vercond="#BS202#" />
         <field name="Material CRC" type="uint" ver1="20.2.0.7" ver2="20.2.0.7" vercond="#BS_GT_FO3#" />
         <field name="Has Normals" type="bool">Do we have lighting normals? These are essential for proper lighting: if not present, the model will only be influenced by ambient light.</field>
         <field name="Normals" type="Vector3" arr1="Num Vertices" cond="Has Normals">The lighting normals.</field>

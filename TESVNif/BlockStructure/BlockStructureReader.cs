@@ -9,9 +9,9 @@ namespace SSE.TESVNif.BlockStructure
 {
     public class BlockStructureReader
     {
-        public class CompoundContext
+        public class BlockContext
         {
-            public string Owner { get; set; }
+            public List<string> Inheritance { get; set; }
             public string Argument { get; set; }
             public string Template { get; set; }
         }
@@ -40,7 +40,7 @@ namespace SSE.TESVNif.BlockStructure
                         );
         }
 
-        public Block ReadSchemaByName(string schemaName, CompoundContext context = null)
+        public Data ReadSchemaByName(string schemaName, BlockContext context = null)
         {
             if (Document.Basics.TryGetValue(schemaName, out var basicSchema))
                 return ReadBasic(basicSchema);
@@ -49,7 +49,7 @@ namespace SSE.TESVNif.BlockStructure
             if (Document.Enums.TryGetValue(schemaName, out var enumSchema))
                 return ReadEnum(enumSchema);
             if (Document.NiObjects.TryGetValue(schemaName, out var niObjectSchema))
-                return ReadNiObject(niObjectSchema);
+                return ReadBlock(niObjectSchema);
             if (Document.Bitfields.TryGetValue(schemaName, out var bitFieldSchema))
                 return ReadBitField(bitFieldSchema);
             if (Document.Bitflags.TryGetValue(schemaName, out var bitflagsSchema))
@@ -58,22 +58,35 @@ namespace SSE.TESVNif.BlockStructure
             throw new NotImplementedException();
         }
 
-        public BasicBlock ReadBasic(BasicSchema schema)
+        public BasicData ReadBasic(BasicSchema schema)
         {
-            return new BasicBlock(BasicReader.Read(Reader, schema));
+            return new BasicData(BasicReader.Read(Reader, schema));
         }
 
-        public CompoundBlock ReadCompound(CompoundSchema schema, CompoundContext context = null)
+        public CompoundData ReadCompound(CompoundSchema schema, BlockContext context = null)
         {
-            var fields = new Dictionary<string, Block>();
-            foreach (var field in schema.Fields)
+            var fields = new Dictionary<string, Data>();
+            var fieldSchemas = schema.Fields;
+            var identifiers = fieldSchemas
+                .GroupBy(f => f.Name)
+                .Select(f => new KeyValuePair<string, Logic.Value>(f.Key, Logic.Value.From(0)))
+                .Concat(GlobalIdentifiers)
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+            var state = new Logic.Interpreter.State()
             {
-                var result = ReadField(field, fields, context);
-                if (result != null)
-                    fields.Add(field.Name, result);
+                Identifiers = identifiers,
+            };
+            foreach (var field in fieldSchemas.Where(f => IsValidField(f)))
+            {
+                var result = ReadField(field, state, context);
+                if (result == null)
+                    continue;
+                fields.Add(field.Name, result);
+                identifiers[field.Name] = Logic.Value.From(result);
             }
 
-            return new CompoundBlock()
+            return new CompoundData()
             {
                 Name = schema.Name,
                 Fields = fields,
@@ -86,53 +99,126 @@ namespace SSE.TESVNif.BlockStructure
                 new List<FieldSchema>() :
                 GetNiObjectFields(Document.NiObjects[schema.Inherits]);
 
-            return inheritedFields.Concat(schema.OwnFields);
+            return inheritedFields.Concat(schema.Fields);
         }
 
-        public NiObjectBlock ReadNiObject(NiObjectSchema schema)
+        public List<NiObjectSchema> GetInheritenceChain(NiObjectSchema schema)
         {
-            var fields = new Dictionary<string, Block>();
-            var fieldSchemas = GetNiObjectFields(schema);
-            var context = new CompoundContext()
+            if (schema.Inherits == null)
+                return new List<NiObjectSchema>() { schema };
+
+            var chain = GetInheritenceChain(Document.NiObjects[schema.Inherits]);
+            chain.Add(schema);
+            return chain;
+        }
+
+        public BlockData ReadParentBlock(NiObjectSchema schema)
+        {
+            if (schema.Inherits == null)
+                return null;
+
+            var parentSchema = Document.NiObjects[schema.Inherits];
+            return ReadBlock(parentSchema);
+        }
+
+        public BlockData ReadBlock(NiObjectSchema schema)
+        {
+            var fields = new Dictionary<string, Data>();
+
+            var inheritance = GetInheritenceChain(schema);
+            var fieldSchemas = inheritance
+                .SelectMany(s => s.Fields);
+
+            var identifiers = fieldSchemas
+                .GroupBy(f => f.Name)
+                .Select(f => new KeyValuePair<string, Logic.Value>(f.Key, Logic.Value.From(0)))
+                .Concat(GlobalIdentifiers)
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+            var state = new Logic.Interpreter.State()
             {
-                Owner = schema.Name
-            }; ;
-            foreach (var field in fieldSchemas)
+                Identifiers = identifiers,
+            };
+            var context = new BlockContext()
             {
-                var result = ReadField(field, fields, context);
-                if (result != null)
-                    fields.Add(field.Name, result);
+                Inheritance = inheritance.Select(i => i.Name).ToList()
+            };
+
+            foreach (var field in fieldSchemas.Where(s => IsValidField(s, context)))
+            {
+                var result = ReadField(field, state, context);
+                if (result == null)
+                    continue;
+                fields.Add(field.Name, result);
+                identifiers[field.Name] = Logic.Value.From(result);
             }
-            return new NiObjectBlock()
+
+            return new BlockData()
             {
                 Name = schema.Name,
                 Fields = fields,
+                Inheritance = inheritance,
             };
         }
 
-        EnumBlock ReadEnum(EnumSchema schema)
+        EnumData ReadEnum(EnumSchema schema)
         {
-            var storageResult = ReadSchemaByName(schema.Storage) as BasicBlock;
-            return new EnumBlock(Convert.ToInt64(storageResult.Value));
+            var storageResult = ReadSchemaByName(schema.Storage) as BasicData;
+            return new EnumData(Convert.ToInt64(storageResult.Value));
         }
-        BasicBlock ReadBitField(BitFieldSchema schema)
+        Data ReadBitField(BitFieldSchema schema)
         {
             // TODO... we just skip over bitfield for now
-            var storageResult = ReadSchemaByName(schema.Storage) as BasicBlock;
+            var storageResult = ReadSchemaByName(schema.Storage) as BasicData;
             return storageResult;
         }
-        BasicBlock ReadBitflags(BitflagsSchema schema)
+        Data ReadBitflags(BitflagsSchema schema)
         {
             // TODO... we just skip over bitfield for now
-            var storageResult = ReadSchemaByName(schema.Storage) as BasicBlock;
+            var storageResult = ReadSchemaByName(schema.Storage) as BasicData;
             return storageResult;
         }
 
-        public Block ReadField(FieldSchema field, Dictionary<string, Block> fields, CompoundContext context = null)
+        public bool IsValidField(FieldSchema field, BlockContext context = null)
         {
-            var childContext = new CompoundContext()
+            if (field.MinVersion != null && Version < field.MinVersion)
+                return false;
+            if (field.MaxVersion != null && Version > field.MaxVersion)
+                return false;
+
+            if (field.VersionCondition != null)
+                if (!InterpretExpression(field.VersionCondition).AsBoolean)
+                    return false;
+
+            if (field.OnlyT != null)
+                if (!context.Inheritance.Contains(field.OnlyT))
+                    return false;
+
+            if (field.ExcludeT != null)
+                if (context.Inheritance.Contains(field.ExcludeT))
+                    return false;
+
+            return true;
+
+            Logic.Value InterpretExpression(string expressionSource)
             {
-                Owner = context?.Owner
+                var subsitutedSource = ResolveSubsitutions(expressionSource, "vercond", null);
+                var tokens = Logic.Lexer.ReadSource(subsitutedSource);
+                var expression = Logic.Parser.Parse(tokens);
+                var state = new Logic.Interpreter.State()
+                {
+                    Identifiers = GlobalIdentifiers,
+                };
+                var value = Logic.Interpreter.Interpret(expression, state);
+                return value;
+            }
+        }
+
+        public Data ReadField(FieldSchema field, Logic.Interpreter.State state, BlockContext context = null)
+        {
+            var childContext = new BlockContext()
+            {
+                Inheritance = context?.Inheritance
             };
             if (field.Argument != null)
                 childContext.Argument = InterpretExpression(field.Argument, "arg").AsString;
@@ -140,21 +226,8 @@ namespace SSE.TESVNif.BlockStructure
             if (field.Template != null)
                 childContext.Template = InterpretExpression(field.Template, "template").AsString;
 
-            if (field.MinVersion != null && Version < field.MinVersion)
-                return null;
-            if (field.MaxVersion != null && Version > field.MaxVersion)
-                return null;
-
-            if (field.VersionCondition != null)
-                if (!InterpretExpression(field.VersionCondition, "vercond").AsBoolean)
-                    return null;
-
             if (field.Condition != null)
                 if (!InterpretExpression(field.Condition, "cond").AsBoolean)
-                    return null;
-
-            if (field.OnlyT != null)
-                if (context != null && context.Owner != field.OnlyT)
                     return null;
 
             var fieldType = InterpretExpression(field.Type, "type").AsString;
@@ -167,7 +240,7 @@ namespace SSE.TESVNif.BlockStructure
                 var results = Enumerable.Range(0, (int)count)
                     .Select(_ => ReadSchemaByName(fieldType, childContext))
                     .ToList();
-                return new ListBlock(results);
+                return new ListData(results);
             }
 
             return ReadSchemaByName(fieldType, childContext);
@@ -175,13 +248,6 @@ namespace SSE.TESVNif.BlockStructure
             Logic.Value InterpretExpression(string expressionSource, string attribute)
             {
                 var subsitutedSource = ResolveSubsitutions(expressionSource, attribute, context);
-                var identifiers = fields
-                    .Select(kv => (kv.Key, Logic.Value.From(kv.Value)))
-                    .Concat(GlobalIdentifiers.Select(kv => (kv.Key, kv.Value)))
-                    .ToDictionary(kv => kv.Key, kv => kv.Item2);
-                var state = new Logic.Interpreter.State() {
-                    Identifiers = identifiers
-                };
                 var tokens = Logic.Lexer.ReadSource(subsitutedSource);
                 var expression = Logic.Parser.Parse(tokens);
                 var value = Logic.Interpreter.Interpret(expression, state);
@@ -189,7 +255,7 @@ namespace SSE.TESVNif.BlockStructure
             }
         }
 
-        public string ResolveSubsitutions(string content, string attribute = null, CompoundContext context = null)
+        public string ResolveSubsitutions(string content, string attribute = null, BlockContext context = null)
         {
             return string.Join("", content
                 .Split('#')
@@ -201,244 +267,15 @@ namespace SSE.TESVNif.BlockStructure
                     if (TokenSubsitutions.TryGetValue((attribute, $"#{identifier}#"), out var globalIdentifer))
                         return globalIdentifer;
 
-                    if (identifier == "T" && context.Template != null)
-                        return context.Template;
-                    if (identifier == "ARG" && context.Argument != null)
-                        return context.Argument;
+                    if (context != null) 
+                        if (identifier == "T" && context.Template != null)
+                            return context.Template;
+                        else if (identifier == "ARG" && context.Argument != null)
+                            return context.Argument;
 
                     throw new Exception("Undefined subsitution");
                 })
             );
         }
     }
-
-    // A . B > C
-    /*
-
-    /// <summary>
-    /// "Block Structure" is a document that describes a binary type.
-    /// I think it used to just be _the_ "nif.xml", but is now
-    /// its own independant system.
-    /// https://github.com/niftools/nifxml/wiki
-    /// </summary>
-    public class BlockStructureSchema
-    {
-
-        public RootNode Root { get; set; }
-        public Dictionary<string, Dictionary<string, string>> TokenSubsitutions { get; set; }
-
-        public BlockStructureSchema(XElement rootElement)
-        {
-            Root = new RootNode(rootElement);
-            TokenSubsitutions = new Dictionary<string, Dictionary<string, string>>();
-
-            foreach (var token in Root.Tokens.Reverse<Schemas.TokenSchema>())
-                foreach (var entry in token.Entries)
-                    foreach (var attribute in token.Attributes)
-                    {
-                        var subsitutions = TokenSubsitutions.ReadOrSet(
-                            attribute,
-                            new Dictionary<string, string>()
-                        );
-                        subsitutions.Add(
-                            entry.Identifier.Substring(1, entry.Identifier.Length - 2),
-                            ResolveSubsitutions(entry.Content, subsitutions)
-                        );
-                    }
-        }
-
-        public static string ResolveSubsitutions(string content, Dictionary<string, string> subsitutions)
-        {
-            return string.Join("", content
-                .Split('#')
-                .Select((s, i) => i % 2 == 0 ? s : subsitutions[s])
-            );
-        }
-
-        public BlockStructureReader.CompoundResult ReadHeader(Stream stream)
-        {
-            var binaryStream = new BinaryReader(stream);
-            var reader = new BlockStructureReader() {
-                Reader = binaryStream,
-                Schema = this
-            };
-            return reader.ReadCompoundByName("Header");
-        }
-
-        public BlockStructureReader.NiObjectResult ReadNiObject(Stream stream, NiObjectSchema schema)
-        {
-            var binaryStream = new BinaryReader(stream);
-            var reader = new BlockStructureReader()
-            {
-                Reader = binaryStream,
-                Schema = this
-            };
-            return reader.ReadNiObject(schema);
-        }
-    }
-
-    public class BlockStructureReader
-    {
-        public BlockStructureSchema Schema { get; set; }
-        public BinaryReader Reader { get; set; }
-
-        int version = VersionParser.Parse("20.2.0.7");
-
-        public CompoundResult ReadCompoundByName(string name)
-        {
-            var headerCompound = Schema.Root.Compounds[name];
-            return ReadCompound(headerCompound);
-        }
-        public NiObjectResult ReadByNiObjectName(string name)
-        {
-            var schema = Schema.Root.NiObjects[name];
-            return ReadNiObject(schema);
-        }
-        long ReadEnum(EnumNode @enum)
-        {
-            switch (@enum.Storage)
-            {
-                case BasicTypeReference basicRef:
-                    if (basicRef.ReferenceFor.Size != -1)
-                        Reader.ReadBytes(basicRef.ReferenceFor.Size);
-                    return 0;
-                default:
-                    throw new Exception("Complicated enum!");
-            }
-        }
-
-        public CompoundResult ReadCompound(CompoundSchema compound)
-        {
-            var fields = new Dictionary<string, Result>();
-            foreach (var field in compound.Fields)
-                fields.Add(field.Name, ReadField(field, fields));
-            return new CompoundResult()
-            {
-                Name = compound.Name,
-                Fields = fields,
-            };
-        }
-
-        public NiObjectResult ReadNiObject(NiObjectSchema niObject)
-        {
-            var fields = new Dictionary<string, Result>();
-            foreach (var field in niObject.Fields)
-                fields.Add(field.Name, ReadField(field, fields));
-            return new NiObjectResult()
-            {
-                Name = niObject.Name,
-                FieldResults = fields,
-            };
-        }
-
-        public Result ReadField(FieldSchema field, Dictionary<string, Result> previousResults)
-        {
-            if (field.MinVersion != null && version < field.MinVersion)
-                return null;
-            if (field.MaxVersion != null && version > field.MaxVersion)
-                return null;
-
-            if (field.Condition != null)
-                if (!IsConditionSatified(field.Condition, previousResults))
-                    return null;
-
-            if (field.VersionCondition != null)
-                if (!IsVercondSatisified(field.VersionCondition, previousResults))
-                    return null;
-
-            if (field.Dimensions != null && field.Dimensions.Count > 0)
-                return new ListResult(
-                    Enumerable.Range(0, (int)GetArrayCount(field.Dimensions, previousResults))
-                        .Select(_ => ReadTypeReference(field.Type))
-                        .ToList()
-                );
-
-            return ReadTypeReference(field.Type);
-        }
-
-        public Result ReadTypeReference(TypeReference reference)
-        {
-            switch (reference)
-            {
-                case BasicTypeReference basicRef:
-                    return new BasicResult(BasicReader.Read(Reader, basicRef.ReferenceFor));
-                case EnumTypeReference enumRef:
-                    return new EnumResult(ReadEnum(enumRef.ReferenceFor));
-                case CompoundTypeReference compRef:
-                    return ReadCompound(compRef.ReferenceFor);
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
-        public Logic.Interpreter.State BuildState(Dictionary<string, Result> previousResults)
-        {
-            return new Logic.Interpreter.State()
-            {
-                Identifiers = previousResults
-                    .Select(kv => kv.Value is BasicResult basic ?
-                        (kv.Key, Logic.Interpreter.Result.Convert(basic.Value)) :
-                        (kv.Key, null))
-                    .Where(kv => kv.Item2 != null)
-                    .Concat(
-                        new List<(string, Logic.Interpreter.Result)>() {
-                            ("Version", Logic.Interpreter.Result.Convert(version)),
-                            ("User Version", Logic.Interpreter.Result.Convert(12)),
-                            ("BS Header BS Version", Logic.Interpreter.Result.Convert(100)),
-                        }
-                        .Where(kv => !previousResults.ContainsKey(kv.Item1))
-                    )
-                    .ToDictionary(kv => kv.Item1, kv => kv.Item2)
-            };
-        }
-
-        public bool IsConditionSatified(string source, Dictionary<string, Result> previousResults)
-        {
-            var subsitutedSource = BlockStructureSchema.ResolveSubsitutions(
-                source,
-                Schema.TokenSubsitutions[$"cond"]
-            );
-            var state = BuildState(previousResults);
-            var result = Logic.Logic.Run(subsitutedSource, state);
-
-            if (result is Logic.Interpreter.BooleanResult booleanResult)
-                return booleanResult.Value;
-
-            throw new Exception();
-        }
-
-        public bool IsVercondSatisified(string source, Dictionary<string, Result> previousResults)
-        {
-            var subsitutedSource = BlockStructureSchema.ResolveSubsitutions(
-                source,
-                Schema.TokenSubsitutions[$"vercond"]
-            );
-            var state = BuildState(previousResults);
-            var result = Logic.Logic.Run(subsitutedSource, state);
-
-            if (result is Logic.Interpreter.BooleanResult booleanResult)
-                return booleanResult.Value;
-
-            throw new Exception();
-        }
-
-        public long GetArrayCount(List<string> dimensions, Dictionary<string, Result> previousResults)
-        {
-            var state = BuildState(previousResults);
-            var count = dimensions.Select((dimension, index) =>
-            {
-                var subsitutedSource = BlockStructureSchema.ResolveSubsitutions(
-                    dimension,
-                    Schema.TokenSubsitutions[$"arr{index + 1}"]
-                );
-                var result = Logic.Logic.Run(subsitutedSource, state);
-                if (result is Logic.Interpreter.NumberResult numberResult)
-                    return numberResult.Value;
-                throw new Exception();
-            }).Aggregate((prev, next) => prev * next);
-
-            return count;
-        }
-    }
-    */
 }

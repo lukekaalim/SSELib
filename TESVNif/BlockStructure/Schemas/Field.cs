@@ -18,6 +18,7 @@ namespace SSE.TESVNif.BlockStructure.Schemas
         public string Condition { get; set; }
         public string VersionCondition { get; set; }
         public string OnlyT { get; set; }
+        public string ExcludeT { get; set; }
 
         public string Argument { get; set; }
         public string Template { get; set; }
@@ -39,6 +40,7 @@ namespace SSE.TESVNif.BlockStructure.Schemas
             Condition = element.Attribute("cond")?.Value;
             VersionCondition = element.Attribute("vercond")?.Value;
             OnlyT = element.Attribute("onlyT")?.Value;
+            ExcludeT = element.Attribute("excludeT")?.Value;
 
             Argument = element.Attribute("arg")?.Value;
             Template = element.Attribute("template")?.Value;

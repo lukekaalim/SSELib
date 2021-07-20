@@ -36,32 +36,32 @@ namespace TESVTesting
 			}
 		}
 
-        public class BlockConverter : JsonConverter<Block>
+        public class BlockConverter : JsonConverter<Data>
         {
-            public override Block Read(ref Utf8JsonReader reader, System.Type typeToConvert, JsonSerializerOptions options)
+            public override Data Read(ref Utf8JsonReader reader, System.Type typeToConvert, JsonSerializerOptions options)
             {
                 throw new System.NotImplementedException();
             }
 
-            public override void Write(Utf8JsonWriter writer, Block value, JsonSerializerOptions options)
+            public override void Write(Utf8JsonWriter writer, Data value, JsonSerializerOptions options)
             {
 				switch (value)
                 {
-					case ListBlock list:
+					case ListData list:
 						writer.WriteStartArray();
 						foreach (var element in list.Contents)
 							Write(writer, element, options);
 						writer.WriteEndArray();
 						break;
-					case BasicBlock basic:
+					case BasicData basic:
 						writer.WriteStringValue(basic.Value.ToString());
 						break;
-					case CompoundBlock compound:
+					case CompoundData compound:
 						switch (compound.Name)
                         {
 							case "ExportString":
 							case "SizedString":
-								writer.WriteStringValue(NIFReader.ReadSizedString(compound));
+								writer.WriteStringValue(SSE.TESVNif.Structures.CharList.ReadString(compound));
 								return;
                         }
 						writer.WriteStartObject();
@@ -72,10 +72,10 @@ namespace TESVTesting
                         }
 						writer.WriteEndObject();
 						break;
-					case EnumBlock @enum:
+					case EnumData @enum:
 						writer.WriteStringValue(@enum.Value.ToString());
 						break;
-					case NiObjectBlock niObject:
+					case BlockData niObject:
 						writer.WriteStartObject();
 						foreach (var field in niObject.Fields)
 						{
@@ -91,18 +91,10 @@ namespace TESVTesting
         [Test]
 		public async Task Test2()
 		{
-			Console.WriteLine(DateTime.Now);
-			for (int i = 0; i < 100; i++)
-				await NIFReader.Read("/Users/lukekaalim/projects/SSE-Data-Lib/axe01.nif");
-			Console.WriteLine(DateTime.Now);
-			/*
-			var output = new FileInfo("/Users/lukekaalim/projects/SSE-Data-Lib/axe01.json");
-			using var outputStream = output.Open(FileMode.Create, FileAccess.Write);
-			var options = new JsonSerializerOptions();
-			options.Converters.Add(new BlockConverter());
-			options.WriteIndented = true;
-			await JsonSerializer.SerializeAsync(outputStream, file, options);
-			*/
+			var axePath = "/Users/lukekaalim/projects/SSE-Data-Lib/TestData/axe01.nif";
+			var rankaPath = "/Users/lukekaalim/projects/SSE-Data-Lib/TestData/Ranka Axe-446-1-0-1-1/Data/meshes/weapons/ranka/ranka.nif";
+			var axe = await NIFReader.Read(axePath);
+			var ranka = await NIFReader.Read(rankaPath);
 		}
 
 		[Test]

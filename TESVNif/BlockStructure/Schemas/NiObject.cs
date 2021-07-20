@@ -11,7 +11,7 @@ namespace SSE.TESVNif.BlockStructure.Schemas
         public string Name { get; set; }
         public string Versions { get; set; }
 
-        public List<FieldSchema> OwnFields { get; set; }
+        public List<FieldSchema> Fields { get; set; }
 
         public NiObjectSchema(XElement element)
         {
@@ -19,7 +19,7 @@ namespace SSE.TESVNif.BlockStructure.Schemas
             Versions = element.Attribute("versions")?.Value;
             Inherits = element.Attribute("inherit")?.Value;
 
-            OwnFields = element.Elements()
+            Fields = element.Elements()
                 .Select(e => new FieldSchema(e))
                 .ToList();
         }
