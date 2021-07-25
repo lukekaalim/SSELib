@@ -93,8 +93,10 @@ namespace TESVTesting
 		{
 			var axePath = "/Users/lukekaalim/projects/SSE-Data-Lib/TestData/axe01.nif";
 			var rankaPath = "/Users/lukekaalim/projects/SSE-Data-Lib/TestData/Ranka Axe-446-1-0-1-1/Data/meshes/weapons/ranka/ranka.nif";
+			var macePath = "/Users/lukekaalim/projects/SSE-Data-Lib/TestData/W_art_Ice_mace.NIF";
 			var axe = await NIFReader.Read(axePath);
 			var ranka = await NIFReader.Read(rankaPath);
+			//var mace = await NIFReader.Read(macePath);
 		}
 
 		[Test]
