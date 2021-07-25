@@ -107,8 +107,8 @@ namespace SSE.TESVArchive
 	{
 		public static int ByteSize => BSAHash.HashSize + 8;
 
-		public bool CompressionBit => (SizeAndCompression & 0x00000001u) == 1;
-		public uint Size => SizeAndCompression & 0xFFFFFFFEu;
+		public bool CompressionBit => false;
+		public uint Size => SizeAndCompression & 0x3fffffff;
 
 		public BSAHash NameHash { get; set; }
 		public uint SizeAndCompression { get; set; }
@@ -123,8 +123,7 @@ namespace SSE.TESVArchive
 			{
 				NameHash = nameHash,
 				SizeAndCompression = sizeAndCompression,
-				// why???
-				DataOffset = dataOffset + 17,
+				DataOffset = dataOffset,
 			};
 		}
 	}
@@ -236,8 +235,29 @@ namespace SSE.TESVArchive
 			return paths;
 		}
 
+		public async Task<byte[]> ReadCompressedFile(FileRecord record)
+		{
+			ArchiveStream.Seek(record.DataOffset, SeekOrigin.Begin);
+			var reader = new BinaryReader(ArchiveStream);
+			var realSize = reader.ReadUInt32();
+			var source = new byte[record.Size - 4];
+			await ArchiveStream.ReadAsync(source, 0, source.Length);
+
+			using (var memory = new MemoryStream(source))
+			{
+				var output = K4os.Compression.LZ4.Streams.LZ4Stream.Decode(memory);
+				var targetBytes = new byte[realSize];
+				await output.ReadAsync(targetBytes, 0, targetBytes.Length);
+				return targetBytes;
+			}
+		}
+
 		public async Task<byte[]> ReadFile(FileRecord record)
         {
+			var isCompressed = (Header.ArchiveFlags & BSA105ArchiveFlags.CompressedArchive) == BSA105ArchiveFlags.CompressedArchive;
+			if ((isCompressed && !record.CompressionBit) || (!isCompressed && record.CompressionBit))
+				return await ReadCompressedFile(record);
+
 			ArchiveStream.Seek(record.DataOffset, SeekOrigin.Begin);
 			var fileBytes = new byte[record.Size];
 			await ArchiveStream.ReadAsync(fileBytes, 0, fileBytes.Length);

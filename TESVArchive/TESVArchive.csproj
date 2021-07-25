@@ -4,4 +4,15 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Remove="K4os.Compression.LZ4" />
+    <None Remove="K4os.Compression.LZ4.Streams" />
+    <None Remove="IonKiwi.lz4.managed" />
+    <None Remove="lz4net" />
+    <None Remove="Lz4.Net" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="K4os.Compression.LZ4" Version="1.2.6" />
+    <PackageReference Include="K4os.Compression.LZ4.Streams" Version="1.2.6" />
+  </ItemGroup>
 </Project>

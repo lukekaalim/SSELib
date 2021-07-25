@@ -17,4 +17,17 @@ namespace SSE.TESVArchive
 		}
 		public static explicit operator string(BZString b) => b.content;
 	}
+
+	public readonly struct BString
+	{
+		public readonly string content;
+		public readonly int length;
+		public int ByteLength => length + 1;
+
+		public BString(byte[] bytes, int offset)
+		{
+			length = bytes[offset];
+			content = Encoding.UTF8.GetString(bytes, offset + 1, length);
+		}
+	}
 }
