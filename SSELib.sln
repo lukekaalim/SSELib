@@ -21,6 +21,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TESVTesting", "TESVTesting\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TESVNif", "TESVNif\TESVNif.csproj", "{4739C9A1-FDD1-427F-AF00-9C800E5CC8CA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TESV", "TESV\TESV.csproj", "{F4337B1F-0A15-4854-99F3-49C39954CD8F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlockStructure", "BlockStructure\BlockStructure.csproj", "{50C3BA27-9289-4846-A43A-5262E9EC6FDF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +59,14 @@ Global
 		{4739C9A1-FDD1-427F-AF00-9C800E5CC8CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4739C9A1-FDD1-427F-AF00-9C800E5CC8CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4739C9A1-FDD1-427F-AF00-9C800E5CC8CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4337B1F-0A15-4854-99F3-49C39954CD8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4337B1F-0A15-4854-99F3-49C39954CD8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4337B1F-0A15-4854-99F3-49C39954CD8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4337B1F-0A15-4854-99F3-49C39954CD8F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50C3BA27-9289-4846-A43A-5262E9EC6FDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50C3BA27-9289-4846-A43A-5262E9EC6FDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50C3BA27-9289-4846-A43A-5262E9EC6FDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50C3BA27-9289-4846-A43A-5262E9EC6FDF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Logic\" />
+    <None Remove="Schemas\" />
+    <None Remove="Schemas\Forward\" />
+    <None Remove="Precomputed\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Logic\" />
+    <Folder Include="Schemas\" />
+    <Folder Include="Precomputed\" />
+  </ItemGroup>
+</Project>
