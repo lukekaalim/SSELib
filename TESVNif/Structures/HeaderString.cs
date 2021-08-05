@@ -1,12 +1,11 @@
 ﻿using System;
-using SSE.TESVNif.BlockStructure;
 
 namespace SSE.TESVNif.Structures
 {
     public class ReferenceString
     {
         public int Index { get; set; }
-        public ReferenceString(CompoundData data)
+        public ReferenceString(BlockStructure.CompoundData data)
         {
             Index = data.GetBasic<int>("Index");
         }

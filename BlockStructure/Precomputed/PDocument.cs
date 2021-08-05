@@ -14,11 +14,12 @@ namespace BlockStructure.Precomputed
     public class PDocumentSchema
     {
         public int SchemaVersion { get; set; }
-        public string VersionID { get; set; }
+
+        public VersionKey Key { get; set; }
 
         public int NifVersion { get; set; }
-        public int? BethesdaVersion { get; set; }
-        public int? UserVersion { get; set; }
+        public uint? BethesdaVersion { get; set; }
+        public uint? UserVersion { get; set; }
 
         public SchemaDocument BaseDocument { get; set; }
 
@@ -43,15 +44,14 @@ namespace BlockStructure.Precomputed
             return chain;
         }
 
-
-        public PDocumentSchema(SchemaDocument baseDocument, VersionSchema version)
+        public PDocumentSchema(SchemaDocument baseDocument, VersionKey key)
         {
             BaseDocument = baseDocument;
+            Key = key;
 
-            VersionID = version.Id;
-            NifVersion = version.Num;
-            BethesdaVersion = version.BethesdaVersions.FirstOrDefault();
-            UserVersion = version.UserVersions.FirstOrDefault();
+            NifVersion = key.NifVersion;
+            BethesdaVersion = key.BethesdaVersion;
+            UserVersion = key.UserVersion;
 
             References = new Dictionary<TypeReferenceKey, TypeReference>();
 
@@ -59,14 +59,20 @@ namespace BlockStructure.Precomputed
             StaticGlobals = new Dictionary<string, Logic.Value>()
             {
                 { "Version", Logic.Value.From(NifVersion) },
+                { "User Version", Logic.Value.From(0) },
+                { "BS Header", new Logic.StructureValue(new Dictionary<string, Logic.Value>()
+                {
+                    { "BS Version", Logic.Value.From(0) }
+                }) },
             };
-            if (BethesdaVersion is int bsVersion)
-                StaticGlobals.Add("BS Header", new Logic.StructureValue(new Dictionary<string, Logic.Value>()
+
+            if (BethesdaVersion is uint bsVersion)
+                StaticGlobals["BS Header"] = new Logic.StructureValue(new Dictionary<string, Logic.Value>()
                 {
                     { "BS Version", Logic.Value.From(bsVersion) }
-                }));
-            if (UserVersion is int userVersion)
-                StaticGlobals.Add("User Version", Logic.Value.From(userVersion));
+                });
+            if (UserVersion is uint userVersion)
+                StaticGlobals["User Version"] = Logic.Value.From(userVersion);
 
             NiObjectInheritance = baseDocument.NiObjects.Values
                 .ToDictionary(
@@ -91,7 +97,7 @@ namespace BlockStructure.Precomputed
                 {
                     attributeSubsitutions.Add(
                         entry.Identifier.Substring(1, entry.Identifier.Length - 2),
-                        TokenSubsitution.ResolveSubsitutions(entry.Content, attributeSubsitutions)
+                        TokenLookup.ResolveSubsitutions(entry.Content, attributeSubsitutions)
                     );
                 }
                 Tokens.Add(attribute.Key, attributeSubsitutions);

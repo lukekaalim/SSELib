@@ -13,5 +13,6 @@
     <ProjectReference Include="..\TESVArchive\TESVArchive.csproj" />
     <ProjectReference Include="..\TESVPlugin\TESVPlugin.csproj" />
     <ProjectReference Include="..\TESVRecords\TESVRecord.csproj" />
+    <ProjectReference Include="..\TESVNif\TESVNif.csproj" />
   </ItemGroup>
 </Project>

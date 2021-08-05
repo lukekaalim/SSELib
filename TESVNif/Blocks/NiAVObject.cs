@@ -9,7 +9,7 @@ namespace SSE.TESVNif.Blocks
     {
         public Vector3 Translate { get; set; }
 
-        public NiAVObject(NIFReader.NIFFile file, BlockStructure.BlockData data) : base(file, data)
+        public NiAVObject(NIFFile file, BlockStructure.BlockData data) : base(file, data)
         {
             Translate = new Vector3(data.GetCompound("Translation"));
         }

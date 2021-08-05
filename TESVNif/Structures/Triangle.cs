@@ -1,5 +1,5 @@
 ﻿using System;
-using SSE.TESVNif.BlockStructure;
+
 
 namespace SSE.TESVNif.Structures
 {
@@ -9,7 +9,7 @@ namespace SSE.TESVNif.Structures
         public ushort V2 { get; set; }
         public ushort V3 { get; set; }
 
-        public Triangle(CompoundData data)
+        public Triangle(BlockStructure.CompoundData data)
         {
             V1 = data.GetBasic<ushort>("v1");
             V2 = data.GetBasic<ushort>("v2");

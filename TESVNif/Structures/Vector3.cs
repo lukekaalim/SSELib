@@ -1,5 +1,4 @@
 ﻿using System;
-using SSE.TESVNif.BlockStructure;
 
 namespace SSE.TESVNif.Structures
 {
@@ -9,7 +8,7 @@ namespace SSE.TESVNif.Structures
         public float Y { get; set; }
         public float Z { get; set; }
 
-        public Vector3(CompoundData data)
+        public Vector3(BlockStructure.CompoundData data)
         {
             X = data.GetBasic<float>("x");
             Y = data.GetBasic<float>("y");

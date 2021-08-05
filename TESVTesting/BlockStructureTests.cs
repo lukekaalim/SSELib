@@ -10,17 +10,7 @@ using BlockStructure;
 
 namespace TESVTesting
 {
-    public static class CharList
-    {
-        public static string ReadString(Data data)
-        {
-            var compound = (CompoundData)data;
-            var charArray = compound
-                .GetBasicList<char>("Value")
-                .ToArray();
-            return new string(charArray);
-        }
-    }
+    /*
 
     public class BlockStructureTests
     {
@@ -90,4 +80,5 @@ namespace TESVTesting
             Console.WriteLine("10*={0}", sw.Elapsed);
         }
     }
+    */
 }

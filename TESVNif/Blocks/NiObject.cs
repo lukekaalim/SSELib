@@ -4,9 +4,9 @@ namespace SSE.TESVNif.Blocks
 {
     public class NiObject
     {
-        public NIFReader.NIFFile File { get; set; }
+        public NIFFile File { get; set; }
 
-        public NiObject(NIFReader.NIFFile file)
+        public NiObject(NIFFile file)
         {
             File = file;
         }

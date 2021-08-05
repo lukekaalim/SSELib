@@ -9,8 +9,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using SSE.TESVNif.BlockStructure.Logic;
-using SSE.TESVNif.BlockStructure;
 
 namespace TESVTesting
 {
@@ -35,7 +33,7 @@ namespace TESVTesting
 				await stream.WriteAsync(file);
 			}
 		}
-
+		/*
         public class BlockConverter : JsonConverter<Data>
         {
             public override Data Read(ref Utf8JsonReader reader, System.Type typeToConvert, JsonSerializerOptions options)
@@ -87,34 +85,28 @@ namespace TESVTesting
 				}
             }
         }
-
+		*/
         [Test]
-		public async Task Test2()
+		public void Test2()
 		{
 			var axePath = "/Users/lukekaalim/projects/SSE-Data-Lib/TestData/axe01.nif";
 			var rankaPath = "/Users/lukekaalim/projects/SSE-Data-Lib/TestData/Ranka Axe-446-1-0-1-1/Data/meshes/weapons/ranka/ranka.nif";
 			var macePath = "/Users/lukekaalim/projects/SSE-Data-Lib/TestData/W_art_Ice_mace.NIF";
-			var axe = await NIFReader.Read(axePath);
-			var ranka = await NIFReader.Read(rankaPath);
-			//var mace = await NIFReader.Read(macePath);
-		}
+			using var axeStream = new FileInfo(axePath).OpenRead();
+			using var rankaStream = new FileInfo(rankaPath).OpenRead();
+			using var maceStream = new FileInfo(macePath).OpenRead();
 
-		[Test]
-		public void Test3()
-		{
-			var source = "(Version == 10.0.1.2) || (Version == 20.2.0.7)";
-			var state = new Interpreter.State()
+			var reader = new NIFStreamReader()
 			{
-				Identifiers = new Dictionary<string, Value>()
-				{
-					{ "Version", Value.From(SSE.TESVNif.BlockStructure.VersionParser.Parse("10.0.1.2")) },
-				}
+				Schema = NifSchema.LoadEmbedded(),
+				Stream = axeStream,
 			};
-			var tokens = Lexer.ReadSource(source);
-			var expression = Parser.Parse(tokens);
-			var result = Interpreter.Interpret(expression, state);
 
-			Assert.IsTrue(result.AsBoolean);
+			var axe = reader.ReadFile();
+			reader.Stream = rankaStream;
+			var ranka = reader.ReadFile();
+			reader.Stream = maceStream;
+			var mace = reader.ReadFile();
 		}
 	}
 }

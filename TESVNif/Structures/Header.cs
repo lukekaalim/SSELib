@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using SSE.TESVNif.BlockStructure;
-using SSE.TESVNif.BlockStructure.Logic;
+using BlockStructure;
+using BlockStructure.Logic;
 
 namespace SSE.TESVNif.Structures
 {
@@ -23,21 +23,57 @@ namespace SSE.TESVNif.Structures
         }
     }
 
-    public class Header
+    public abstract class BlockReadStrategy
     {
-        public struct BlockDescription
+        public class TypeIndexed : BlockReadStrategy
         {
-            public string Type { get; set; }
-            public uint Size { get; set; }
+            public struct BlockDescription
+            {
+                public string Type { get; set; }
+                public uint Size { get; set; }
+
+                public BlockDescription(Header header, int index)
+                {
+                    var typeIndex = header.BlockTypeIndexByBlockIndex[index];
+                    Type = header.BlockTypes[typeIndex];
+                    Size = header.BlockSizes[index];
+                }
+            }
+
+            public List<BlockDescription> BlockDescriptions { get; set; }
+
+            public TypeIndexed(Header header)
+            {
+                BlockDescriptions = Enumerable.Range(0, (int)header.BlockCount)
+                    .Select(index => new BlockDescription(header, index))
+                    .ToList();
+            }
         }
 
+        public class TypePrefixed : BlockReadStrategy
+        {
+            public uint BlockCount { get; set; }
+
+            public TypePrefixed(Header header)
+            {
+                BlockCount = (uint)header.BlockCount;
+            }
+        }
+    }
+
+    public class Header
+    {
         public string HeaderString { get; set; }
         public int Version { get; set; }
-        public uint UserVersion { get; set; }
+        public uint? UserVersion { get; set; }
 
         public BSHeader BSHeader { get; set; }
 
-        public List<BlockDescription> Blocks { get; set; }
+        public uint? BlockCount { get; set; }
+        public List<string> BlockTypes { get; set; }
+        public List<uint> BlockSizes { get; set; }
+        public List<short> BlockTypeIndexByBlockIndex { get; set; }
+
         public List<string> Strings { get; set; }
         public List<uint> Groups { get; set; }
 
@@ -47,33 +83,55 @@ namespace SSE.TESVNif.Structures
             Version = data.GetBasic<int>("Version");
             UserVersion = data.GetBasic<uint>("User Version");
 
-            BSHeader = new BSHeader(data.GetCompound("BS Header"));
+            if (data.Fields.ContainsKey("BS Header"))
+                BSHeader = new BSHeader(data.GetCompound("BS Header"));
 
-            var types = data.GetCompoundList("Block Types")
+            BlockCount = data.TryGetBasic<uint?>("Num Blocks", null);
+            BlockTypes = data.GetCompoundList("Block Types")
                 .Select(CharList.ReadString)
-                .ToArray();
-            var blockTypes = data.GetBasicList<short>("Block Type Index");
-            var blockSizes = data.GetBasicList<uint>("Block Size");
+                .ToList();
+            BlockTypeIndexByBlockIndex = data.TryGetBasicList<short>("Block Type Index", null);
+            BlockSizes = data.TryGetBasicList<uint>("Block Size", null);
 
-            Blocks = blockTypes.Select(i => new BlockDescription()
-            {
-                Type = types[i],
-                Size = blockSizes[i]
-            }).ToList();
             Strings = data.GetCompoundList("Strings")
                 .Select(CharList.ReadString)
                 .ToList();
             Groups = data.GetBasicList<uint>("Groups");
         }
 
-        public Dictionary<string, Value> Globals =>
-            new Dictionary<string, Value>()
-            {
-                { "Version", Value.From(Version) },
-                { "User Version", Value.From(UserVersion) },
-                { "BS Header", new StructureValue(new Dictionary<string, Value>() {
+        public VersionKey GetVersionKey()
+        {
+            var key = new VersionKey();
+            if (UserVersion != null)
+                key.UserVersion = UserVersion;
+            if (BSHeader != null)
+                key.BethesdaVersion = BSHeader.BSVersion;
+
+            return key;
+        }
+
+        public Dictionary<string, Value> BuildGlobals()
+        {
+            var globals = new Dictionary<string, Value>();
+            globals.Add("Version", Value.From(Version));
+            if (UserVersion != null)
+                globals.Add("User Version", Value.From((uint)UserVersion));
+            if (BSHeader != null)
+                globals.Add("BS Header", new StructureValue(new Dictionary<string, Value>() {
                     { "BS Version", Value.From(BSHeader.BSVersion) }
-                }) },
-            };
+                }));
+
+            return globals;
+        }
+
+        public BlockReadStrategy GetBlockStrategy()
+        {
+            if (BlockTypeIndexByBlockIndex != null)
+                return new BlockReadStrategy.TypeIndexed(this);
+            if (BlockCount != null)
+                return new BlockReadStrategy.TypePrefixed(this);
+
+            throw new NotImplementedException();
+        }
     }
 }

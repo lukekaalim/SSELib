@@ -1,5 +1,4 @@
 ﻿using System;
-using SSE.TESVNif.BlockStructure;
 
 namespace SSE.TESVNif.Structures
 {
@@ -28,7 +27,7 @@ namespace SSE.TESVNif.Structures
 
 		public Vector3 Vertex { get; set; }
 
-		public BSVertexData(CompoundData data)
+		public BSVertexData(BlockStructure.CompoundData data)
 		{
 			Vertex = new Vector3(data.GetCompound("Vertex"));
 		}
@@ -54,7 +53,7 @@ namespace SSE.TESVNif.Structures
 
         public Vector3 Vertex { get; set; }
         
-        public BSVertexDataSSE(CompoundData data)
+        public BSVertexDataSSE(BlockStructure.CompoundData data)
         {
             Vertex = new Vector3(data.GetCompound("Vertex"));
         }

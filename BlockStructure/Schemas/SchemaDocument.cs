@@ -7,6 +7,24 @@ namespace BlockStructure.Schemas
 {
     public class SchemaDocument
     {
+        public static List<TokenSchema> StaticTokens = new List<TokenSchema>()
+        {
+            new TokenSchema() {
+                Attributes = new List<string>() { "cond", "arr1", "arr2", "arg" },
+                Entries = new List<TokenSchema.Entry>() {
+                    new TokenSchema.Entry() { Identifier = "ARG", Content = "Argument" }
+                },
+                Name = "Meta",
+            },
+            new TokenSchema() {
+                Attributes = new List<string>() { "type" },
+                Entries = new List<TokenSchema.Entry>() {
+                    new TokenSchema.Entry() { Identifier = "T", Content = "Template" }
+                },
+                Name = "Template",
+            }
+        };
+
         public int SchemaVersion { get; set; }
 
         // Readable
@@ -21,12 +39,25 @@ namespace BlockStructure.Schemas
         public List<TokenSchema> Tokens { get; set; }
         public List<VersionSchema> Versions { get; set; }
 
+        // Precomputed
+        public TokenLookup TokenLookup { get; set; }
+        public InheritanceLookup InheritanceLookup { get; set; }
+        public ConditionLookup ConditionLookup { get; set; }
+        public TypeReferenceLookup TypeReferenceLookup { get; set; }
+
         public SchemaDocument(XElement element)
         {
             SchemaVersion = VersionParser.Parse(element.Attribute("version").Value);
 
             var elementsByName = element.Elements()
                 .ToLookup(e => e.Name);
+
+            Tokens = elementsByName["token"]
+                .Select(e => new TokenSchema(e))
+                .ToList();
+            Versions = elementsByName["version"]
+                .Select(e => new VersionSchema(e))
+                .ToList();
 
             NiObjects = elementsByName["niobject"]
                 .Select(e => new NiObjectSchema(e))
@@ -47,18 +78,15 @@ namespace BlockStructure.Schemas
                 .Select(e => new BitflagsSchema(e))
                 .ToDictionary(s => s.Name);
 
-            Tokens = elementsByName["token"]
-                .Select(e => new TokenSchema(e))
-                .ToList();
-            Versions = elementsByName["version"]
-                .Select(e => new VersionSchema(e))
-                .ToList();
+            TokenLookup = new TokenLookup(Tokens.Concat(StaticTokens));
+            InheritanceLookup = new InheritanceLookup(NiObjects);
+            ConditionLookup = new ConditionLookup(NiObjects.Values, Compounds.Values, TokenLookup);
+            TypeReferenceLookup = new TypeReferenceLookup(NiObjects, Compounds);
         }
 
-        public Precomputed.PDocumentSchema Precompute(string id)
+        public Precomputed.PDocumentSchema Precompute(VersionKey key)
         {
-            var version = Versions.Find(v => v.Id == id);
-            return new Precomputed.PDocumentSchema(this, version);
+            return new Precomputed.PDocumentSchema(this, key);
         }
     }
 }

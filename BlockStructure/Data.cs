@@ -28,6 +28,15 @@ namespace BlockStructure
         {
             return (CompoundData)Fields[fieldName];
         }
+        public CompoundData TryGetCompound(string fieldName)
+        {
+            if (Fields.TryGetValue(fieldName, out var data))
+            {
+                var compoundData = (CompoundData)data;
+                return compoundData;
+            }
+            return null;
+        }
 
         public List<T> GetBasicList<T>(string fieldName)
         {
@@ -37,6 +46,17 @@ namespace BlockStructure
                 .Select(b => (T)b.Value)
                 .ToList();
         }
+        public List<T> TryGetBasicList<T>(string fieldName, List<T> fallback)
+        {
+            if (Fields.TryGetValue(fieldName, out var data))
+            {
+                return ((ListData)data).Contents
+                    .Select(c => (BasicData)c)
+                    .Select(b => (T)b.Value)
+                    .ToList();
+            }
+            return fallback;
+        } 
         public List<CompoundData> GetCompoundList(string fieldName)
         {
             var data = (ListData)Fields[fieldName];

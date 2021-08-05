@@ -1,6 +1,5 @@
 ﻿using System;
 using SSE.TESVNif.Structures;
-using SSE.TESVNif.BlockStructure;
 
 namespace SSE.TESVNif.Blocks
 {
@@ -10,7 +9,7 @@ namespace SSE.TESVNif.Blocks
 
         public string Name => NameIndex.Resolve(File.Header);
 
-        public NiObjectNET(NIFReader.NIFFile file, BlockStructure.BlockData data) : base(file)
+        public NiObjectNET(NIFFile file, BlockStructure.BlockData data) : base(file)
         {
             NameIndex = new ReferenceString(data.GetCompound("Name"));
         }

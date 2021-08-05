@@ -12,6 +12,8 @@ namespace BlockStructure.Schemas
             public string Identifier { get; set; }
             public string Content { get; set; }
 
+            public Entry() { }
+
             public Entry (XElement element)
             {
                 Identifier = element.Attribute("token").Value;
@@ -22,6 +24,8 @@ namespace BlockStructure.Schemas
         public List<Entry> Entries { get; set; }
         public List<string> Attributes { get; set; }
         public string Name { get; set; }
+
+        public TokenSchema() { }
 
         public TokenSchema(XElement element)
         {

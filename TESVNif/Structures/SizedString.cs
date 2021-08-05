@@ -1,5 +1,5 @@
 ﻿using System;
-using SSE.TESVNif.BlockStructure;
+using BlockStructure;
 
 namespace SSE.TESVNif.Structures
 {

@@ -18,18 +18,22 @@ namespace BlockStructure.Precomputed
             return ReadBlock(Document.Blocks[blockName], argument);
         }
 
+        public Data ReadBasic(string type)
+        {
+            return new BasicData(BasicReader.Read(Reader, type));
+        }
+
         public Data ReadBlock(PBlockSchema blockSchema, Value argument = null)
         {
-            var block = new CompoundData()
+            var block = new BlockData()
             {
                 Fields = new Dictionary<string, Data>(),
                 Name = blockSchema.Name,
             };
             var state = new Interpreter.State()
             {
-                Identifiers = blockSchema.Fields
-                    .GroupBy(f => f.Name)
-                    .ToDictionary(f => f.Key, _ => Value.From(0))
+                Identifiers = blockSchema.AllIdentifiers
+                    .ToDictionary(id => id, _ => Value.From(0))
             };
             state.Identifiers.Add("Argument", argument);
             foreach (var fieldSchema in blockSchema.Fields)
@@ -45,8 +49,6 @@ namespace BlockStructure.Precomputed
 
         public Data ReadField(PFieldSchema fieldSchema, Interpreter.State state)
         {
-            if (!fieldSchema.ValidForVersion)
-                return null;
             if (fieldSchema.Condition != null)
             {
                 var condValue = Interpreter.Interpret(fieldSchema.Condition, state);
@@ -67,11 +69,6 @@ namespace BlockStructure.Precomputed
                 return new ListData(data.ToList());
             }
             return ReadReference(fieldSchema.Type, argument);
-        }
-
-        public Data ReadBasic(string type)
-        {
-            return new BasicData(BasicReader.Read(Reader, type));
         }
 
         public Data ReadReference(TypeReference reference, Value argument = null)

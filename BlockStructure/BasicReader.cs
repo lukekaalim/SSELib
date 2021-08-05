@@ -3,8 +3,11 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 
+using BlockStructure.Schemas;
+
 namespace BlockStructure
 {
+    /*
     public class BasicReader
     {
         public int? Version { get; set; }
@@ -19,9 +22,9 @@ namespace BlockStructure
 
             { "uint64", r => r.ReadUInt64() },
         };
-        public object Read(BinaryReader reader, Schemas.BasicSchema schema)
+        public virtual Data Read(BinaryReader reader, Schemas.BasicSchema schema)
         {
-            return Read(reader, schema.Name);
+            return new BasicData(Read(reader, schema.Name));
         }
 
         public object Read(BinaryReader reader, string schemaName)
@@ -77,4 +80,5 @@ namespace BlockStructure
             return new string(content.ToArray());
         }
     }
+    */
 }
