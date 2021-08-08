@@ -4,7 +4,7 @@ namespace SSE.TESVNif.Blocks.Besthesda
 {
     public class BSShaderTextureSet : NiObject
     {
-        public BSShaderTextureSet(NIFFile file, BlockStructure.BlockData data) : base(file)
+        public BSShaderTextureSet(NIFFile file, BlockStructure.NiObjectData data) : base(file)
         {
         }
     }

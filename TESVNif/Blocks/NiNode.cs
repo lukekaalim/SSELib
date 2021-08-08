@@ -13,7 +13,7 @@ namespace SSE.TESVNif.Blocks
             .Select(r => File.Objects[r])
             .ToList();
 
-        public NiNode(NIFFile file, BlockStructure.BlockData data) : base(file, data)
+        public NiNode(NIFFile file, BlockStructure.NiObjectData data) : base(file, data)
         {
             childReferences = data.GetBasicList<int>("Children");
         }

@@ -8,12 +8,10 @@
     <None Remove="Logic\" />
     <None Remove="Schemas\" />
     <None Remove="Schemas\Forward\" />
-    <None Remove="Precomputed\" />
     <None Remove="StyleCop.Analyzers" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Logic\" />
     <Folder Include="Schemas\" />
-    <Folder Include="Precomputed\" />
   </ItemGroup>
 </Project>

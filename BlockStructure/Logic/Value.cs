@@ -57,6 +57,11 @@ namespace BlockStructure.Logic
                         default:
                             throw new Exception();
                     }
+                case SchemaData schemaData:
+                    return new StructureValue(schemaData.Fields
+                        .Where(kv => kv.Value is BasicData || kv.Value is CompoundData)
+                        .Where(kv => kv.Value != null)
+                        .ToDictionary(kv => kv.Key.Name, kv => From(kv.Value)));
                 case CompoundData compound:
                     return new StructureValue(compound.Fields
                         .Where(kv => kv.Value is BasicData || kv.Value is CompoundData)

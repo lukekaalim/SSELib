@@ -4,7 +4,7 @@ namespace SSE.TESVNif.Blocks.Havok
 {
     public class bhkNiCollisionObject : NiCollisionObject
     {
-        public bhkNiCollisionObject(NIFFile file, BlockStructure.BlockData data) : base(file, data)
+        public bhkNiCollisionObject(NIFFile file, BlockStructure.NiObjectData data) : base(file, data)
         {
         }
     }

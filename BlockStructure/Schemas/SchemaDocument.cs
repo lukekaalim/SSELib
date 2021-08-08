@@ -12,16 +12,9 @@ namespace BlockStructure.Schemas
             new TokenSchema() {
                 Attributes = new List<string>() { "cond", "arr1", "arr2", "arg" },
                 Entries = new List<TokenSchema.Entry>() {
-                    new TokenSchema.Entry() { Identifier = "ARG", Content = "Argument" }
+                    new TokenSchema.Entry() { Identifier = "#ARG#", Content = "Argument" }
                 },
                 Name = "Meta",
-            },
-            new TokenSchema() {
-                Attributes = new List<string>() { "type" },
-                Entries = new List<TokenSchema.Entry>() {
-                    new TokenSchema.Entry() { Identifier = "T", Content = "Template" }
-                },
-                Name = "Template",
             }
         };
 
@@ -42,8 +35,7 @@ namespace BlockStructure.Schemas
         // Precomputed
         public TokenLookup TokenLookup { get; set; }
         public InheritanceLookup InheritanceLookup { get; set; }
-        public ConditionLookup ConditionLookup { get; set; }
-        public TypeReferenceLookup TypeReferenceLookup { get; set; }
+        public ExpressionLookup ExpressionLookup { get; set; }
 
         public SchemaDocument(XElement element)
         {
@@ -80,13 +72,7 @@ namespace BlockStructure.Schemas
 
             TokenLookup = new TokenLookup(Tokens.Concat(StaticTokens));
             InheritanceLookup = new InheritanceLookup(NiObjects);
-            ConditionLookup = new ConditionLookup(NiObjects.Values, Compounds.Values, TokenLookup);
-            TypeReferenceLookup = new TypeReferenceLookup(NiObjects, Compounds);
-        }
-
-        public Precomputed.PDocumentSchema Precompute(VersionKey key)
-        {
-            return new Precomputed.PDocumentSchema(this, key);
+            ExpressionLookup = new ExpressionLookup(NiObjects.Values, Compounds.Values, TokenLookup);
         }
     }
 }

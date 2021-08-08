@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 using BlockStructure;
 using BlockStructure.Schemas;
-using BlockStructure.Precomputed;
 
 using SSE.TESVNif.Blocks;
 using SSE.TESVNif.Structures;
@@ -32,48 +31,57 @@ namespace SSE.TESVNif
             .ToList();
     }
 
-    public class NifSchema
+    public static class NifSchema
     {
-        public XDocument Document { get; set; }
-        public SchemaDocument Schema { get; set; }
-        public Dictionary<VersionKey, PDocumentSchema> SchemasByVersion { get; set; }
+        public static XDocument Source { get; set; }
+        public static SchemaDocument Doc { get; set; }
 
-        public static NifSchema LoadEmbedded()
+        static NifSchema()
         {
             var assembly = Assembly.GetExecutingAssembly();
-            using (var docStream = assembly.GetManifestResourceStream("SSE.TESVNif.NIF.xml"))
+            using (var sourceStream = assembly.GetManifestResourceStream("SSE.TESVNif.NIF.xml"))
             {
-                var doc = XDocument.Load(docStream);
-                var schema = new SchemaDocument(doc.Root);
-                var schemas = schema.Versions
-                    .SelectMany(v => v.GetVersionKeys())
-                    .Select(k => schema.Precompute(k))
-                    .ToDictionary(p => p.Key);
-
-                return new NifSchema()
-                {
-                    Document = doc,
-                    Schema = schema,
-                    SchemasByVersion = schemas,
-                };
+                Source = XDocument.Load(sourceStream);
+                Doc = new SchemaDocument(Source.Root);
             }
         }
     }
 
-    public class NIFStreamReader
+    public class NIFStreamReader : IDisposable
     {
-        public Stream Stream { get; set; }
-        public NifSchema Schema { get; set; }
+        BinaryReader BinaryReader;
+        Reader BlockReader;
 
-        public string ReadHeaderString()
+        public NIFStreamReader(Stream stream)
         {
-            var reader = new BlockStructureReader(Schema.Document, Stream);
-
-            return (string)(reader.ReadSchemaByName("HeaderString") as BasicData).Value;
+            BinaryReader = new BinaryReader(stream);
+            BlockReader = new Reader(NifSchema.Doc, ReadBasic, TryReadCompound);
         }
+
+        BasicData ReadBasic(BasicSchema schema, Reader.ReadingContext context)
+        {
+            return new BasicData(DataReaders.ReadBasicObject(BinaryReader, schema, context));
+        }
+
+        bool TryReadCompound(CompoundSchema schema, Reader.ReadingContext context, out Data data)
+        {
+            data = ReadData();
+            return data != null;
+            Data ReadData()
+            {
+                switch (schema.Name)
+                {
+                    case "SizedString":
+                        return new BasicData(DataReaders.ReadSizedString(BinaryReader));
+                    default:
+                        return null;
+                }
+            }
+        }
+
         public int ReadHeaderVersion()
         {
-            var headerString = ReadHeaderString();
+            var headerString = DataReaders.ReadLineString(BinaryReader);
             var versionString = headerString.Substring(
                 headerString
                     .ToList()
@@ -84,87 +92,71 @@ namespace SSE.TESVNif
         }
         public Header ReadHeader()
         {
-            var headerStart = Stream.Position;
+            var headerStart = BinaryReader.BaseStream.Position;
             var version = ReadHeaderVersion();
 
-            Stream.Seek(headerStart, SeekOrigin.Begin);
-            var reader = new BlockStructureReader(Schema.Document, Stream);
-            reader.Version = version;
+            BinaryReader.BaseStream.Seek(headerStart, SeekOrigin.Begin);
+            var data = BlockReader.ReadData("Header", new VersionKey(version));
 
-            return new Header((CompoundData)reader.ReadSchemaByName("Header"));
+            return new Header(data as CompoundData);
         }
-
-        public Data[] ReadIndexedBlocks(BlockReadStrategy.TypeIndexed indexStrat, PReader reader)
+        public Data[] ReadIndexedBlocks(BlockReadStrategy.TypeIndexed strategy)
         {
-            var desc = indexStrat.BlockDescriptions;
+            var desc = strategy.BlockDescriptions;
             var blocks = new Data[desc.Count];
             for (int i = 0; i < desc.Count; i++)
-                blocks[i] = reader.ReadBlock(desc[i].Type);
+                blocks[i] = BlockReader.ReadData(desc[i].Type, strategy.Version);
             return blocks;
         }
-        public Data[] ReadPrefixedBlocks(BlockReadStrategy.TypePrefixed prefixStrat, PReader reader)
+        public Data[] ReadPrefixedBlocks(BlockReadStrategy.TypePrefixed strategy)
         {
-            var blocks = new Data[prefixStrat.BlockCount];
-            for (int i = 0; i < prefixStrat.BlockCount; i++)
+            var blocks = new Data[strategy.BlockCount];
+            for (int i = 0; i < strategy.BlockCount; i++)
             {
-                var typeData = reader.ReadBlock("Sized String");
-                var type = CharList.ReadString(typeData);
-                blocks[i] = reader.ReadBlock(type);
+                var type = DataReaders.ReadSizedString(BinaryReader);
+                blocks[i] = BlockReader.ReadData(type, strategy.Version);
             }
             return blocks;
         }
-        public PReader GetReader(Header header)
-        {
-            var key = header.GetVersionKey();
-            var strat = header.GetBlockStrategy();
-            var doc = Schema.SchemasByVersion[key];
-            var reader = new PReader()
-            {
-                Document = doc,
-                Reader = new BinaryReader(Stream),
-                BasicReader = new BasicReader(),
-            };
-            return reader;
-        }
-        public Data[] ReadBlocks(Header header, PReader reader)
+        public Data[] ReadBlocks(Header header)
         {
             var strat = header.GetBlockStrategy();
             switch (strat)
             {
                 case BlockReadStrategy.TypeIndexed indexStrat:
-                    return ReadIndexedBlocks(indexStrat, reader);
+                    return ReadIndexedBlocks(indexStrat);
                 case BlockReadStrategy.TypePrefixed prefixStrat:
-                    return ReadPrefixedBlocks(prefixStrat, reader);
+                    return ReadPrefixedBlocks(prefixStrat);
                 default:
                     throw new NotImplementedException();
             }
         }
-        public Footer ReadFooter(PReader reader)
+
+        public Footer ReadFooter(Header header)
         {
-            var data = reader.ReadBlock("Footer") as CompoundData;
-            return new Footer(data);
+            var footerData = BlockReader.ReadData("Footer", header.VersionKey);
+            return new Footer(footerData as CompoundData);
         }
 
         public NIFFile ReadFile()
         {
             var header = ReadHeader();
-            var reader = GetReader(header);
-            var blocks = ReadBlocks(header, reader);
-            var footer = ReadFooter(reader);
+            var blocks = ReadBlocks(header);
+            var footer = ReadFooter(header);
             var file = new NIFFile()
             {
                 Header = header,
                 Footer = footer,
             };
             var objects = blocks
-                .Select(d => ReadNiObject(file, d as BlockData))
+                .Select(d => ReadNiObject(file, d as NiObjectData))
                 .ToList();
             file.Objects = objects;
 
             return file;
         }
 
-        public NiObject ReadNiObject(NIFFile file, BlockData data)
+        public NiObject ReadNiObject(NIFFile file, NiObjectData data)
         {
             switch (data.Name)
             {
@@ -205,6 +197,11 @@ namespace SSE.TESVNif
                 default:
                     return new NiObject(file);
             }
+        }
+
+        public void Dispose()
+        {
+            BinaryReader.Dispose();
         }
     }
 }

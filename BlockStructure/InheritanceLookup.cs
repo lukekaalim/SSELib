@@ -8,14 +8,22 @@ namespace BlockStructure
 {
     public class InheritanceLookup
     {
-        public Dictionary<string, List<NiObjectSchema>> NiObjectInheritance { get; set; }
+        public Dictionary<NiObjectSchema, List<NiObjectSchema>> NiObjectInheritance { get; set; }
+        public Dictionary<NiObjectSchema, List<FieldSchema>> NiObjectFields { get; set; }
 
-        public InheritanceLookup(Dictionary<string, NiObjectSchema> NiObjects)
+        public InheritanceLookup(Dictionary<string, NiObjectSchema> niObjects)
         {
-            NiObjectInheritance = NiObjects.Values
+            NiObjectInheritance = niObjects.Values
                 .ToDictionary(
-                    ni => ni.Name,
-                    ni => GetInheritenceChain(ni, NiObjects)
+                    ni => ni,
+                    ni => GetInheritenceChain(ni, niObjects)
+                );
+            NiObjectFields = niObjects.Values
+                .ToDictionary(
+                    ni => ni,
+                    ni => NiObjectInheritance[ni]
+                        .SelectMany(inheritedNi => inheritedNi.Fields)
+                        .ToList()
                 );
         }
 
@@ -29,6 +37,35 @@ namespace BlockStructure
             var chain = GetInheritenceChain(niObjects[schema.Inherits], niObjects);
             chain.Add(schema);
             return chain;
+        }
+
+        public List<FieldSchema> GetFields(NiObjectSchema niObjectSchema)
+        {
+            if (NiObjectFields.TryGetValue(niObjectSchema, out var fields))
+            {
+                return fields;
+            }
+            throw new Exception();
+        }
+
+        public bool CheckIncludedInType(FieldSchema fieldSchema, NiObjectSchema parent)
+        {
+            if (parent == null)
+                return true;
+
+            if (NiObjectInheritance.TryGetValue(parent, out var inheritance))
+            {
+                if (fieldSchema.OnlyT != null)
+                    if (!inheritance.Any(inheritedNi => inheritedNi.Name == fieldSchema.OnlyT))
+                        return false;
+
+                if (fieldSchema.ExcludeT != null)
+                    if (inheritance.Any(inheritedNi => inheritedNi.Name == fieldSchema.ExcludeT))
+                        return false;
+
+                return true;
+            }
+            return true;
         }
     }
 }

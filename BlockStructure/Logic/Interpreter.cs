@@ -6,12 +6,6 @@ namespace BlockStructure.Logic
 {
     public static class Interpreter
     {
-        public class State
-        {
-            public Dictionary<string, Value> Identifiers { get; set; }
-            public HashSet<string> EmptyIdentifiers { get; set; }
-        }
-
         public static Value Interpret (Expression expression, State state = null)
         {
             switch (expression)
@@ -81,8 +75,8 @@ namespace BlockStructure.Logic
                         System.Globalization.NumberStyles.AllowHexSpecifier
                     ));
 
-            if (state != null && state.Identifiers.ContainsKey(expression.Text))
-                return state.Identifiers[expression.Text];
+            if (state != null && state.Values.ContainsKey(expression.Text))
+                return state.Values[expression.Text];
 
             if (expression.Text.Contains("."))
                 return new IntergerValue(VersionParser.Parse(expression.Text));

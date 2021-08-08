@@ -23,6 +23,8 @@ namespace BlockStructure.Schemas
         public string Argument { get; set; }
         public string Template { get; set; }
 
+        public bool IsMultiDimensional => Dimensions.Count > 0;
+
         public FieldSchema(XElement element)
         {
             Name = element.Attribute("name").Value;
@@ -44,6 +46,11 @@ namespace BlockStructure.Schemas
 
             Argument = element.Attribute("arg")?.Value;
             Template = element.Attribute("template")?.Value;
+        }
+
+        public override string ToString()
+        {
+            return $"{Name} ({Type}{(Template == null ? "" : $"<{Template}>")}{(IsMultiDimensional ? "[]" : "")})";
         }
     }
 }

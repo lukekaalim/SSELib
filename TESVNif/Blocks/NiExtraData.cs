@@ -12,9 +12,9 @@ namespace SSE.TESVNif.Blocks
 
         public string Name => nameRef.Resolve(File.Header);
 
-        public NiExtraData(NIFFile file, BlockStructure.BlockData data) : base(file)
+        public NiExtraData(NIFFile file, BlockStructure.NiObjectData data) : base(file)
         {
-            nameRef = new ReferenceString(data.GetCompound("Name"));
+            nameRef = new ReferenceString(data.TryGetCompound("Name"));
         }
     }
 }

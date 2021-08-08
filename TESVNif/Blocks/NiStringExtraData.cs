@@ -5,7 +5,7 @@ namespace SSE.TESVNif.Blocks
 {
     public class NiStringExtraData : NiExtraData
     {
-        public NiStringExtraData(NIFFile file, BlockStructure.BlockData data) : base(file, data)
+        public NiStringExtraData(NIFFile file, BlockStructure.NiObjectData data) : base(file, data)
         {
 
         }

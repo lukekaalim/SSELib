@@ -13,6 +13,7 @@
     <PackageReference Include="coverlet.collector" Version="3.0.3"><IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 <PrivateAssets>all</PrivateAssets>
 </PackageReference>
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,4 +24,7 @@
     <ProjectReference Include="..\BlockStructure\BlockStructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="BenchmarkDotNet" />
+  </ItemGroup>
 </Project>

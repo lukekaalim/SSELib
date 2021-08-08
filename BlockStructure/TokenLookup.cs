@@ -26,6 +26,10 @@ namespace BlockStructure
             foreach (var attributeEntries in entriesByAttribute)
             {
                 var attributeSubsitutions = new Dictionary<string, string>();
+                var attributeLookup = new AttributeEntryLookup() {
+                    Tokens = attributeSubsitutions
+                };
+                Attributes.Add(attributeEntries.Key, attributeLookup);
                 foreach (var entry in attributeEntries)
                 {
                     attributeSubsitutions.Add(
@@ -33,8 +37,6 @@ namespace BlockStructure
                         ResolveSubsitutions(entry.Content, attributeEntries.Key)
                     );
                 }
-                var attributeLookup = new AttributeEntryLookup() { Tokens = attributeSubsitutions };
-                Attributes.Add(attributeEntries.Key, attributeLookup);
             }
         }
 

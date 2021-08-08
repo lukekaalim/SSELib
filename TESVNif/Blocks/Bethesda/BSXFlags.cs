@@ -5,7 +5,7 @@ namespace SSE.TESVNif.Blocks.Besthesda
 {
     public class BSXFlags : NiIntegerExtraData
     {
-        public BSXFlags(NIFFile file, BlockStructure.BlockData data) : base(file, data)
+        public BSXFlags(NIFFile file, BlockStructure.NiObjectData data) : base(file, data)
         {
 
         }

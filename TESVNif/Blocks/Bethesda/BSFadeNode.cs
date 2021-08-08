@@ -5,7 +5,7 @@ namespace SSE.TESVNif.Blocks.Besthesda
 {
     public class BSFadeNode : NiNode
     {
-        public BSFadeNode(NIFFile file, BlockStructure.BlockData data) : base(file, data)
+        public BSFadeNode(NIFFile file, BlockStructure.NiObjectData data) : base(file, data)
         {
 
         }

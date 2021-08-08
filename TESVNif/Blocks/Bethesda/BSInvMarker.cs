@@ -7,7 +7,7 @@ namespace SSE.TESVNif.Blocks.Besthesda
     {
         public float Zoom { get; set; }
 
-        public BSInvMarker(NIFFile file, BlockStructure.BlockData data) : base(file, data)
+        public BSInvMarker(NIFFile file, BlockStructure.NiObjectData data) : base(file, data)
         {
             Zoom = data.GetBasic<float>("Zoom");
         }

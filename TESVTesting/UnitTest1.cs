@@ -14,6 +14,7 @@ namespace TESVTesting
 {
 	public class Tests
 	{
+		/*
 		[Test]
 		public async Task Test1()
 		{
@@ -33,6 +34,7 @@ namespace TESVTesting
 				await stream.WriteAsync(file);
 			}
 		}
+		*/
 		/*
         public class BlockConverter : JsonConverter<Data>
         {
@@ -86,6 +88,7 @@ namespace TESVTesting
             }
         }
 		*/
+		/*
         [Test]
 		public void Test2()
 		{
@@ -108,5 +111,6 @@ namespace TESVTesting
 			reader.Stream = maceStream;
 			var mace = reader.ReadFile();
 		}
+		*/
 	}
 }

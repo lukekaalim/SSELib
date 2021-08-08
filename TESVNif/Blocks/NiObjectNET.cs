@@ -9,7 +9,7 @@ namespace SSE.TESVNif.Blocks
 
         public string Name => NameIndex.Resolve(File.Header);
 
-        public NiObjectNET(NIFFile file, BlockStructure.BlockData data) : base(file)
+        public NiObjectNET(NIFFile file, BlockStructure.NiObjectData data) : base(file)
         {
             NameIndex = new ReferenceString(data.GetCompound("Name"));
         }

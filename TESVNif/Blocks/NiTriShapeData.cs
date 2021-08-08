@@ -11,7 +11,7 @@ namespace SSE.TESVNif.Blocks
         public List<Triangle> Triangles { get; set; }
         public List<Vector3> Vertices { get; set; }
 
-        public NiTriShapeData(NIFFile file, BlockStructure.BlockData data) : base(file, data)
+        public NiTriShapeData(NIFFile file, BlockStructure.NiObjectData data) : base(file, data)
         {
             Triangles = data.GetCompoundList("Triangles")
                 .Select(d => new Triangle(d))

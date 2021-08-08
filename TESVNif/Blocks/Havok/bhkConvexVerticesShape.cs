@@ -5,7 +5,7 @@ namespace SSE.TESVNif.Blocks.Havok
 {
     public class bhkConvexVerticesShape : bhkConvexShape
     {
-        public bhkConvexVerticesShape(NIFFile file, BlockStructure.BlockData data) : base(file, data)
+        public bhkConvexVerticesShape(NIFFile file, BlockStructure.NiObjectData data) : base(file, data)
         {
         }
     }

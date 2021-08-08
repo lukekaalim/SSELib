@@ -25,6 +25,8 @@ namespace SSE.TESVNif.Structures
 
     public abstract class BlockReadStrategy
     {
+        public VersionKey Version { get; set; }
+
         public class TypeIndexed : BlockReadStrategy
         {
             public struct BlockDescription
@@ -47,6 +49,7 @@ namespace SSE.TESVNif.Structures
                 BlockDescriptions = Enumerable.Range(0, (int)header.BlockCount)
                     .Select(index => new BlockDescription(header, index))
                     .ToList();
+                Version = header.VersionKey;
             }
         }
 
@@ -57,6 +60,7 @@ namespace SSE.TESVNif.Structures
             public TypePrefixed(Header header)
             {
                 BlockCount = (uint)header.BlockCount;
+                Version = header.VersionKey;
             }
         }
     }
@@ -77,37 +81,24 @@ namespace SSE.TESVNif.Structures
         public List<string> Strings { get; set; }
         public List<uint> Groups { get; set; }
 
+        public VersionKey VersionKey => new VersionKey(Version, BSHeader?.BSVersion, UserVersion);
+
         public Header(CompoundData data)
         {
             HeaderString = data.GetBasic<string>("Header String").Trim();
             Version = data.GetBasic<int>("Version");
-            UserVersion = data.GetBasic<uint>("User Version");
+            UserVersion = data.TryGetBasic<uint?>("User Version", null);
 
             if (data.Fields.ContainsKey("BS Header"))
                 BSHeader = new BSHeader(data.GetCompound("BS Header"));
 
             BlockCount = data.TryGetBasic<uint?>("Num Blocks", null);
-            BlockTypes = data.GetCompoundList("Block Types")
-                .Select(CharList.ReadString)
-                .ToList();
+            BlockTypes = data.TryGetBasicList<string>("Block Types", null);
             BlockTypeIndexByBlockIndex = data.TryGetBasicList<short>("Block Type Index", null);
             BlockSizes = data.TryGetBasicList<uint>("Block Size", null);
 
-            Strings = data.GetCompoundList("Strings")
-                .Select(CharList.ReadString)
-                .ToList();
-            Groups = data.GetBasicList<uint>("Groups");
-        }
-
-        public VersionKey GetVersionKey()
-        {
-            var key = new VersionKey();
-            if (UserVersion != null)
-                key.UserVersion = UserVersion;
-            if (BSHeader != null)
-                key.BethesdaVersion = BSHeader.BSVersion;
-
-            return key;
+            Strings = data.TryGetBasicList<string>("Strings", null);
+            Groups = data.TryGetBasicList<uint>("Groups", null);
         }
 
         public Dictionary<string, Value> BuildGlobals()

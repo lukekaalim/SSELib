@@ -7,7 +7,7 @@ namespace SSE.TESVNif.Blocks
 
         public NiGeometryData Data => File.Objects[dataIndex] as NiGeometryData;
 
-        public NiGeometry(NIFFile file, BlockStructure.BlockData data) : base(file, data)
+        public NiGeometry(NIFFile file, BlockStructure.NiObjectData data) : base(file, data)
         {
             dataIndex = data.GetBasic<int>("Data");
         }

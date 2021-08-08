@@ -7,6 +7,11 @@ namespace BlockStructure
 {
     public abstract class Data { }
 
+    public class SchemaData : Data
+    {
+        public Dictionary<FieldSchema, Data> Fields { get; set; }
+    }
+
     public class FieldedData : Data
     {
         public T GetBasic<T>(string fieldName)
@@ -68,10 +73,10 @@ namespace BlockStructure
         public Dictionary<string, Data> Fields { get; set; }
     }
 
-    public class BlockData : FieldedData
+    public class NiObjectData : FieldedData
     {
         public string Name { get; set; }
-        public List<NiObjectSchema> Inheritance { get; set; }
+        public NiObjectSchema Schema { get; set; }
     }
 
     public class BasicData : Data
@@ -82,7 +87,7 @@ namespace BlockStructure
 
     public class CompoundData : FieldedData
     {
-        public string Name { get; set; }
+        public CompoundSchema Schema { get; set; }
     }
 
     public class EnumData : Data

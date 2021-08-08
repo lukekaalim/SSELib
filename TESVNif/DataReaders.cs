@@ -2,38 +2,22 @@
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using System.Text;
 
+using BlockStructure;
 using BlockStructure.Schemas;
 
-namespace BlockStructure
+namespace SSE.TESVNif
 {
-    /*
-    public class BasicReader
+    public static class DataReaders
     {
-        public int? Version { get; set; }
-
-        public delegate object Reader(BinaryReader r); 
-
-        public static Dictionary<string, Reader> SupportedSchemas = new Dictionary<string, Reader>()
+        public static object ReadBasicObject(BinaryReader reader, BasicSchema schema, Reader.ReadingContext context)
         {
-            // If we learn to read more basic types, add them here!
-            { "HeaderString", r => ParseLineString(r) },
-            { "LineString", r => ParseLineString(r) },
-
-            { "uint64", r => r.ReadUInt64() },
-        };
-        public virtual Data Read(BinaryReader reader, Schemas.BasicSchema schema)
-        {
-            return new BasicData(Read(reader, schema.Name));
-        }
-
-        public object Read(BinaryReader reader, string schemaName)
-        {
-            switch (schemaName)
+            switch (schema.Name)
             {
                 case "HeaderString":
                 case "LineString":
-                    return ParseLineString(reader);
+                    return ReadLineString(reader);
                 case "uint64":
                     return reader.ReadUInt64();
                 case "int64":
@@ -60,25 +44,30 @@ namespace BlockStructure
                 case "byte":
                     return reader.ReadByte();
                 case "bool":
-                    if (Version == null || Version <= VersionParser.Parse("4.0.0.2"))
+                    if (context.Version.NifVersion <= VersionParser.Parse("4.0.0.2"))
                         return reader.ReadInt32();
                     return reader.ReadByte();
                 case "float":
                     return reader.ReadSingle();
                 default:
-                    throw new NotImplementedException($"Havent handled type: \"{schemaName}\"");
+                    throw new NotImplementedException($"Havent handled type: \"{schema.Name}\"");
             }
         }
 
-        public static string ParseLineString(BinaryReader reader)
+        public static string ReadLineString(BinaryReader reader)
         {
-            var content = new List<char>() { (char)reader.ReadByte() };
-            while (content[content.Count - 1] != 0x0A)
+            var content = new List<char>();
+            do
             {
-                content.Add((char)reader.ReadByte());
-            }
+                content.Add(reader.ReadChar());
+            } while (content.Last() != 0x0A);
             return new string(content.ToArray());
         }
+
+        public static string ReadSizedString(BinaryReader reader)
+        {
+            var length = reader.ReadUInt32();
+            return new string(reader.ReadChars((int)length));
+        }
     }
-    */
 }
