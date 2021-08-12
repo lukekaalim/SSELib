@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
 
+using K4os.Compression.LZ4.Streams;
+
 namespace SSE.TESVArchive
 {
 	public class BSA105Header
@@ -128,8 +130,14 @@ namespace SSE.TESVArchive
 		}
 	}
 
-	public static class ArchiveScanner
-    {
+	public class ArchiveInfo
+	{
+		public BSA105Header Header { get; set; }
+		public List<BSA105FolderRecord> FolderRecords { get; set; }
+		public List<FileRecordBlock> FileRecordBlocks { get; set; }
+		public List<string> FileNames { get; set; }
+		public Dictionary<string, FileRecord> RecordsByPath { get; set; }
+
 		public static async Task<BSA105Header> ReadHeader(Stream stream)
         {
 			stream.Seek(0, SeekOrigin.Begin);
@@ -164,60 +172,6 @@ namespace SSE.TESVArchive
 
 			return FileRecordBlock.Parse(blockBytes, 0, (int)folder.FileCount);
 		}
-
-		public static async Task<List<string>> ReadFileNameBlock (Stream stream, BSA105Header headers)
-		{
-			stream.Seek(
-				(
-					BSA105Header.HeaderSize +
-					(BSA105FolderRecord.FolderRecordSize * headers.FolderCount) +
-					(FileRecord.ByteSize * headers.FileCount) +
-					(headers.TotalFolderNameLength + headers.FolderCount)
-				),
-				SeekOrigin.Begin
-			);
-			var blockBytes = new byte[headers.TotalFileNameLength];
-			await stream.ReadAsync(blockBytes, 0, blockBytes.Length);
-			var blockString = Encoding.UTF8.GetString(blockBytes);
-			return blockString.Split('\0').ToList();
-		}
-	}
-
-	public class ArchiveStreamReader
-	{
-		public Stream ArchiveStream { get; set; }
-
-		public BSA105Header Header { get; set; }
-		public List<BSA105FolderRecord> Folders { get; set; }
-		public List<FileRecordBlock> FileRecordBlocks { get; set; }
-		public List<string> FileNames { get; set; }
-
-		public Dictionary<string, FileRecord> RecordsByPath { get; set; }
-
-		public static async Task<ArchiveStreamReader> Load(Stream archiveStream)
-        {
-			var header = await ArchiveScanner.ReadHeader(archiveStream);
-			var folders = await ArchiveScanner.ReadFolderRecords(archiveStream, header);
-			var blocks = new List<FileRecordBlock>();
-			foreach (var folder in folders)
-            {
-				blocks.Add(await ArchiveScanner.ReadFileRecordBlock(archiveStream, header, folder));
-			}
-			var names = await ArchiveScanner.ReadFileNameBlock(archiveStream, header);
-
-			var recordsByPath = BuildRecordsByPath(blocks, names);
-
-			return new ArchiveStreamReader()
-			{
-				ArchiveStream = archiveStream,
-				Header = header,
-				Folders = folders,
-				FileRecordBlocks = blocks,
-				FileNames = names.ToList(),
-				RecordsByPath = recordsByPath,
-			};
-		}
-
 		static Dictionary<string, FileRecord> BuildRecordsByPath(List<FileRecordBlock> blocks, List<string> names)
 		{
 			var paths = new Dictionary<string, FileRecord>();
@@ -235,6 +189,76 @@ namespace SSE.TESVArchive
 			return paths;
 		}
 
+		public static async Task<List<string>> ReadFileNameBlock (Stream stream, BSA105Header headers)
+		{
+			stream.Seek(
+				(
+					BSA105Header.HeaderSize +
+					(BSA105FolderRecord.FolderRecordSize * headers.FolderCount) +
+					(FileRecord.ByteSize * headers.FileCount) +
+					(headers.TotalFolderNameLength + headers.FolderCount)
+				),
+				SeekOrigin.Begin
+			);
+			var blockBytes = new byte[headers.TotalFileNameLength];
+			await stream.ReadAsync(blockBytes, 0, blockBytes.Length);
+			var blockString = Encoding.UTF8.GetString(blockBytes);
+			return blockString.Split('\0').ToList();
+		}
+
+		public static async Task<ArchiveInfo> ReadInfo(Stream stream)
+		{
+			var header = await ReadHeader(stream);
+			var folders = await ReadFolderRecords(stream, header);
+
+			// todo: async iterable?
+			var blocks = new List<FileRecordBlock>();
+			foreach (var folder in folders)
+				blocks.Add(await ReadFileRecordBlock(stream, header, folder));
+
+			var names = await ReadFileNameBlock(stream, header);
+			var recordsByPath = BuildRecordsByPath(blocks, names);
+
+			return new ArchiveInfo()
+			{
+				Header = header,
+				FolderRecords = folders,
+				FileRecordBlocks = blocks,
+				FileNames = names,
+				RecordsByPath = recordsByPath
+			};
+		}
+
+		public static async Task<ArchiveInfo> ReadInfo(FileInfo file)
+        {
+			using (var stream = file.OpenRead())
+				return await ReadInfo(stream);
+		}
+	}
+
+	public class ArchiveStreamReader
+	{
+		public Stream ArchiveStream { get; set; }
+		public ArchiveInfo Info { get; set; }
+
+		public BSA105Header Header => Info.Header;
+		public List<BSA105FolderRecord> Folders => Info.FolderRecords;
+		public List<FileRecordBlock> FileRecordBlocks => Info.FileRecordBlocks;
+		public List<string> FileNames => Info.FileNames;
+		public Dictionary<string, FileRecord> RecordsByPath => Info.RecordsByPath;
+
+		public ArchiveStreamReader(Stream archiveStream, ArchiveInfo archiveInfo)
+        {
+			ArchiveStream = archiveStream;
+			Info = archiveInfo;
+		}
+
+		public static async Task<ArchiveStreamReader> LoadFromStream(Stream archiveStream)
+        {
+			var info = await ArchiveInfo.ReadInfo(archiveStream);
+			return new ArchiveStreamReader(archiveStream, info);
+		}
+
 		public async Task<byte[]> ReadCompressedFile(FileRecord record)
 		{
 			ArchiveStream.Seek(record.DataOffset, SeekOrigin.Begin);
@@ -245,7 +269,7 @@ namespace SSE.TESVArchive
 
 			using (var memory = new MemoryStream(source))
 			{
-				var output = K4os.Compression.LZ4.Streams.LZ4Stream.Decode(memory);
+				var output = LZ4Stream.Decode(memory);
 				var targetBytes = new byte[realSize];
 				await output.ReadAsync(targetBytes, 0, targetBytes.Length);
 				return targetBytes;
@@ -254,7 +278,7 @@ namespace SSE.TESVArchive
 
 		public async Task<byte[]> ReadFile(FileRecord record)
         {
-			var isCompressed = (Header.ArchiveFlags & BSA105ArchiveFlags.CompressedArchive) == BSA105ArchiveFlags.CompressedArchive;
+            var isCompressed = (Header.ArchiveFlags & BSA105ArchiveFlags.CompressedArchive) == BSA105ArchiveFlags.CompressedArchive;
 			if ((isCompressed && !record.CompressionBit) || (!isCompressed && record.CompressionBit))
 				return await ReadCompressedFile(record);
 

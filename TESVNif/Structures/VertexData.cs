@@ -2,8 +2,14 @@
 
 namespace SSE.TESVNif.Structures
 {
-    public class BSVertexData
+	public readonly struct BSVertexDesc
     {
+		public readonly ulong Value;
+	}
+
+	public class BSVertexData
+    {
+
 		/*
          * 
 		<field name="Vertex" type="Vector3" cond="(#ARG# #BITAND# 0x401) == 0x401" />
@@ -26,10 +32,14 @@ namespace SSE.TESVNif.Structures
          */
 
 		public Vector3 Vertex { get; set; }
+		public HalfTexCoord UV { get; set; }
+		public ByteVector3 Normal { get; set; }
 
 		public BSVertexData(BlockStructure.CompoundData data)
 		{
 			Vertex = new Vector3(data.GetCompound("Vertex"));
+			UV = data.Fields.ContainsKey("UV") ? new HalfTexCoord(data.GetCompound("UV")) : default(HalfTexCoord);
+			Normal = data.Fields.ContainsKey("Normal") ? new ByteVector3(data.GetCompound("Normal")) : default(ByteVector3);
 		}
     }
 
@@ -52,10 +62,14 @@ namespace SSE.TESVNif.Structures
          */
 
         public Vector3 Vertex { get; set; }
-        
-        public BSVertexDataSSE(BlockStructure.CompoundData data)
+		public HalfTexCoord UV { get; set; }
+		public ByteVector3 Normal { get; set; }
+
+		public BSVertexDataSSE(BlockStructure.CompoundData data)
         {
             Vertex = new Vector3(data.GetCompound("Vertex"));
-        }
+			UV = new HalfTexCoord(data.GetCompound("UV"));
+			Normal = data.Fields.ContainsKey("Normal") ? new ByteVector3(data.GetCompound("Normal")) : default(ByteVector3);
+		}
     }
 }

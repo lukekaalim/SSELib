@@ -55,7 +55,7 @@ namespace BlockStructure.Logic
                         case ulong ul:
                             return From((long)ul);
                         default:
-                            throw new Exception();
+                            return null;
                     }
                 case SchemaData schemaData:
                     return new StructureValue(schemaData.Fields

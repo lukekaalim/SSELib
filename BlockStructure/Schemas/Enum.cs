@@ -39,9 +39,16 @@ namespace BlockStructure.Schemas
 
     public class BitflagsSchema
     {
-        public struct Option
+        public class Option
         {
+            public int Bit { get; set; }
+            public string Name { get; set; }
 
+            public Option(XElement element)
+            {
+                Name = element.Attribute("name").Value;
+                Bit = int.Parse(element.Attribute("bit").Value);
+            }
         }
 
         public string Name { get; set; }
@@ -57,7 +64,9 @@ namespace BlockStructure.Schemas
             Versions = (element.Attribute("versions")?.Value ?? "")
                 .Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
                 .ToList();
-            Options = new List<Option>();
+            Options = element.Elements()
+                .Select(e => new Option(e))
+                .ToList();
         }
     }
 

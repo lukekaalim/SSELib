@@ -3,6 +3,8 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Xml.Linq;
 
+using BlockStructure.Logic;
+
 namespace BlockStructure.Schemas
 {
     public class FieldSchema
@@ -51,6 +53,37 @@ namespace BlockStructure.Schemas
         public override string ToString()
         {
             return $"{Name} ({Type}{(Template == null ? "" : $"<{Template}>")}{(IsMultiDimensional ? "[]" : "")})";
+        }
+
+        public Expression BuildConditionExpression(TokenLookup tokens)
+        {
+            if (Condition == null)
+                return null;
+            var subsitutedSource = tokens.ResolveSubsitutions(Condition, "cond");
+            var lexedTokens = Lexer.ReadSource(subsitutedSource);
+            var expression = Parser.Parse(lexedTokens);
+            return expression;
+        }
+
+        public Expression BuildVersionConditionExpression(TokenLookup tokens)
+        {
+            if (VersionCondition == null)
+                return null;
+            var subsitutedSource = tokens.ResolveSubsitutions(VersionCondition, "vercond");
+            var lexedTokens = Lexer.ReadSource(subsitutedSource);
+            var expression = Parser.Parse(lexedTokens);
+            return expression;
+        }
+
+        public bool InVersionRange(VersionKey key)
+        {
+            if (MaxVersion != null && key.NifVersion > MaxVersion)
+                return false;
+
+            if (MinVersion != null && key.NifVersion < MinVersion)
+                return false;
+
+            return true;
         }
     }
 }

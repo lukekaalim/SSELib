@@ -35,7 +35,7 @@ namespace SSE.TESVNif
                 case "ushort":
                     return reader.ReadUInt16();
                 case "hfloat":
-                    return reader.ReadInt16();
+                    return Half.ToHalf(reader.ReadBytes(2), 0);
                 case "short":
                 case "BlockTypeIndex":
                     return reader.ReadInt16();

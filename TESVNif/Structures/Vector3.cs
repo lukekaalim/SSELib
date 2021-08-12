@@ -15,4 +15,18 @@ namespace SSE.TESVNif.Structures
             Z = data.GetBasic<float>("z");
         }
     }
+
+    public class ByteVector3
+    {
+        public byte X { get; set; }
+        public byte Y { get; set; }
+        public byte Z { get; set; }
+
+        public ByteVector3(BlockStructure.CompoundData data)
+        {
+            X = data.GetBasic<byte>("x");
+            Y = data.GetBasic<byte>("y");
+            Z = data.GetBasic<byte>("z");
+        }
+    }
 }

@@ -9,7 +9,7 @@ namespace SSE.TESVRecord
 {
     public class STATRecord
 	{
-		public struct MODLField
+		public class MODLField
 		{
 			public ZString Model { get; set; }
 
@@ -30,7 +30,7 @@ namespace SSE.TESVRecord
 		{
 			var fields = record.Fields.ToDictionary(f => f.Type, f => f.DataBytes);
 
-			Model = MODLField.Parse(fields["MODL"]);
+			Model = fields.ContainsKey("MODL") ? MODLField.Parse(fields["MODL"]) : null;
 		}
 	}
 }

@@ -65,7 +65,9 @@ namespace SSE.TESVRecord
 		{
 			baseRecord = record;
 
-			var fields = record.Fields.ToDictionary(f => f.Type, f => f.DataBytes);
+			var fields = record.Fields
+				.GroupBy(f => f.Type)
+				.ToDictionary(f => f.Key, f => f.First().DataBytes);
 			EditorID = fields.ContainsKey("EDID") ? (ZString?)ZString.Parse(fields["EDID"]) : null;
 			Name = new LocalFormID(fields["NAME"], 0);
 			Data = fields.ContainsKey("DATA") ? DATAField.Parse(fields["DATA"]) : null;

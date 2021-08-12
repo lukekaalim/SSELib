@@ -20,7 +20,7 @@ namespace SSECLI
             {
                 var info = new FileInfo("/Users/lukekaalim/projects/SSE-Data-Lib/TestData/Skyrim - Meshes0.bsa");
                 using var stream = info.OpenRead();
-                var archive = await ArchiveStreamReader.Load(stream);
+                var archive = await ArchiveStreamReader.LoadFromStream(stream);
 
                 var record = archive.FileRecordBlocks.ToList()[2].FileRecords.First();
                 var file = await archive.ReadFile(record);

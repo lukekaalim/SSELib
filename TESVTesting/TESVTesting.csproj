@@ -22,9 +22,11 @@
     <ProjectReference Include="..\TESVRecords\TESVRecord.csproj" />
     <ProjectReference Include="..\TESVNif\TESVNif.csproj" />
     <ProjectReference Include="..\BlockStructure\BlockStructure.csproj" />
+    <ProjectReference Include="..\BlockStructure.Emit\BlockStructure.Emit.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove="BenchmarkDotNet" />
+    <None Remove="test" />
   </ItemGroup>
 </Project>
