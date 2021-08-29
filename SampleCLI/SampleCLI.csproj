@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="test" />
+    <None Remove="MyNonstandardLibrary" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="MyNonstandardLibrary">
+      <HintPath>..\TESVTesting\bin\Debug\net5.0\MyNonstandardLibrary.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

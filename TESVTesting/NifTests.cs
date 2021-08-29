@@ -20,8 +20,8 @@ namespace TESVTesting
 			watch.Start();
 			for (int i = 0; i < 1; i++)
 			{
-				using var axeReader = new NIFStreamReader(new FileInfo(axePath).OpenRead());
-				var axe = axeReader.ReadFile();
+				//using var axeReader = new NIFStreamReader(new FileInfo(axePath).OpenRead());
+				//var axe = axeReader.ReadFile();
 			}
 			watch.Stop();
 			Console.WriteLine(watch.Elapsed);

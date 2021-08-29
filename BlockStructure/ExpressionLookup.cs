@@ -53,35 +53,35 @@ namespace BlockStructure
             return expression;
         }
 
-        public bool CheckCondition(FieldSchema field, State state)
+        public bool CheckCondition(FieldSchema field, Interpreter interpreter)
         {
             if (Conditions.TryGetValue(field, out var expression))
-                return Interpreter.Interpret(expression, state).AsBoolean;
+                return interpreter.Evaluate(expression) != 0;
             return true;
         }
-        public bool CheckVersionCondition(FieldSchema field, VersionKey version)
+        public bool CheckVersionCondition(FieldSchema field, Interpreter interpreter)
         {
             if (VersionConditions.TryGetValue(field, out var expression))
-                return Interpreter.Interpret(expression, version.State.Value).AsBoolean;
+                return interpreter.Evaluate(expression) != 0;
             return true;
         }
-        public int GetCount(FieldSchema field, State state)
+        public int GetCount(FieldSchema field, Interpreter interpreter)
         {
             if (Dimensions.TryGetValue(field, out var dimensions))
             {
                 return (int)dimensions
-                    .Select(dimension => Interpreter.Interpret(dimension, state).AsInterger)
+                    .Select(dimension => interpreter.Evaluate(dimension))
                     .Aggregate((a, b) => a * b);
             }
             return -1;
         }
-        public Value GetArgument(FieldSchema field, State state)
+        public long GetArgument(FieldSchema field, Interpreter interpreter)
         {
             if (Arguments.TryGetValue(field, out var argument))
             {
-                return Interpreter.Interpret(argument, state);
+                return interpreter.Evaluate(argument);
             }
-            return null;
+            return 0;
         }
     }
 }

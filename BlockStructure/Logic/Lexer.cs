@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace BlockStructure.Logic
@@ -30,7 +31,27 @@ namespace BlockStructure.Logic
                 if (token != null)
                     tokens.Add(token);
             }
-            return tokens;
+            var collapsedTokens = CollapseAdjacentTextTokens(tokens);
+            return collapsedTokens;
+        }
+
+        static List<Token> CollapseAdjacentTextTokens(List<Token> input)
+        {
+            var output = new List<Token>();
+            foreach (var token in input)
+            {
+                var prevToken = output.LastOrDefault();
+                if (token is TextToken textToken)
+                {
+                    if (prevToken != null && prevToken is TextToken prevTextToken)
+                    {
+                        output[output.Count - 1] = TextToken.Merge(prevTextToken, textToken);
+                        continue;
+                    }
+                }
+                output.Add(token);
+            }
+            return output;
         }
     }
 }

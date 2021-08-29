@@ -31,6 +31,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Recreation.Game", "Recreati
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlockStructure.Emit", "BlockStructure.Emit\BlockStructure.Emit.csproj", "{1990EFBE-B3F0-4AC3-A7CC-5F5EE3132A86}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleLib", "SampleLib\SampleLib.csproj", "{409FDD68-76BE-40EC-9E99-D8AFD002887A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleCLI", "SampleCLI\SampleCLI.csproj", "{9792CF4C-EF7E-49B9-8541-862A4995595F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -85,6 +89,14 @@ Global
 		{1990EFBE-B3F0-4AC3-A7CC-5F5EE3132A86}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1990EFBE-B3F0-4AC3-A7CC-5F5EE3132A86}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1990EFBE-B3F0-4AC3-A7CC-5F5EE3132A86}.Release|Any CPU.Build.0 = Release|Any CPU
+		{409FDD68-76BE-40EC-9E99-D8AFD002887A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{409FDD68-76BE-40EC-9E99-D8AFD002887A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{409FDD68-76BE-40EC-9E99-D8AFD002887A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{409FDD68-76BE-40EC-9E99-D8AFD002887A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9792CF4C-EF7E-49B9-8541-862A4995595F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9792CF4C-EF7E-49B9-8541-862A4995595F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9792CF4C-EF7E-49B9-8541-862A4995595F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9792CF4C-EF7E-49B9-8541-862A4995595F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

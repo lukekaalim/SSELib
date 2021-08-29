@@ -101,5 +101,10 @@ namespace BlockStructure.Logic
             offset += (length - 1);
             return token;
         }
+
+        public static TextToken Merge(TextToken a, TextToken b)
+        {
+            return new TextToken($"{a.Content} {b.Content}");
+        }
     }
 }

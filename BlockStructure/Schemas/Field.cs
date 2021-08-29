@@ -7,6 +7,11 @@ using BlockStructure.Logic;
 
 namespace BlockStructure.Schemas
 {
+    public interface IContainsFields
+    {
+        List<FieldSchema> Fields { get; }
+    }
+
     public class FieldSchema
     {
         public string Name { get; set; }
@@ -32,8 +37,8 @@ namespace BlockStructure.Schemas
             Name = element.Attribute("name").Value;
             Type = element.Attribute("type").Value;
 
-            MinVersion = VersionParser.Parse(element.Attribute("ver1"));
-            MaxVersion = VersionParser.Parse(element.Attribute("ver2"));
+            MinVersion = NIFVersion.Parse(element.Attribute("ver1"));
+            MaxVersion = NIFVersion.Parse(element.Attribute("ver2"));
 
             Dimensions = new string[]
             {

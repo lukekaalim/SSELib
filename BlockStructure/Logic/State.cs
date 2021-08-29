@@ -5,48 +5,50 @@ using BlockStructure.Schemas;
 
 namespace BlockStructure.Logic
 {
+    /*
     /// <summary>
     /// Context for variables mentioned in expressions
     /// </summary>
     public class State
     {
-        public Dictionary<string, Value> Values { get; set; }
+        public Dictionary<string, Oldvalue> Values { get; set; }
 
         public State(VersionKey key)
         {
-            Values = new Dictionary<string, Value>();
-            Values.Add("Version", Value.From(key.NifVersion));
+            Values = new Dictionary<string, Oldvalue>();
+            Values.Add("Version", Oldvalue.From(key.NifVersion));
 
             if (key.BethesdaVersion != null)
-                Values.Add("BS Header", new StructureValue(new Dictionary<string, Value>()
+                Values.Add("BS Header", new StructureValue(new Dictionary<string, Oldvalue>()
                 {
-                    { "BS Version", Value.From(key.BethesdaVersion.Value) }
+                    { "BS Version", Oldvalue.From(key.BethesdaVersion.Value) }
                 }));
             else
-                Values.Add("BS Header", new StructureValue(new Dictionary<string, Value>()
+                Values.Add("BS Header", new StructureValue(new Dictionary<string, Oldvalue>()
                 {
-                    { "BS Version", Value.From(0) }
+                    { "BS Version", Oldvalue.From(0) }
                 }));
 
             if (key.UserVersion != null)
-                Values.Add("User Version", Value.From(key.UserVersion.Value));
+                Values.Add("User Version", Oldvalue.From(key.UserVersion.Value));
             else
-                Values.Add("User Version", Value.From(0));
+                Values.Add("User Version", Oldvalue.From(0));
         }
 
-        public State(IEnumerable<FieldSchema> fields, Value argument = null)
+        public State(IEnumerable<FieldSchema> fields, Oldvalue argument = null)
         {
             Values = fields
                 .GroupBy(field => field.Name)
-                .ToDictionary(l => l.Key, _ => Value.From(0));
+                .ToDictionary(l => l.Key, _ => Oldvalue.From(0));
 
             if (argument != null)
                 Values.Add("Argument", argument);
         }
 
-        public void Set(FieldSchema field, Value value)
+        public void Set(FieldSchema field, Oldvalue value)
         {
             Values[field.Name] = value;
         }
     }
+    */
 }

@@ -11,21 +11,10 @@
     <None Remove="BlockStructure\Nodes\" />
     <None Remove="Objects\" />
     <None Remove="System.Numerics.Vectors" />
-    <None Remove="Structures\" />
-    <None Remove="Blocks\NetImmerse\" />
-    <None Remove="Blocks\Bethesda\" />
-    <None Remove="Blocks\Havok\" />
     <None Remove="Markeli.Half" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="NIF.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Blocks\" />
-    <Folder Include="Structures\" />
-    <Folder Include="Blocks\NetImmerse\" />
-    <Folder Include="Blocks\Bethesda\" />
-    <Folder Include="Blocks\Havok\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />

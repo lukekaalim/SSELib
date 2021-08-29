@@ -5,7 +5,7 @@ using System.Xml.Linq;
 
 namespace BlockStructure.Schemas
 {
-    public class NiObjectSchema
+    public class NiObjectSchema : IContainsFields
     {
         public string Inherits { get; set; }
         public string Name { get; set; }

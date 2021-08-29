@@ -59,9 +59,9 @@ namespace Recreation.Data
             }
         }
 
-        public async Task<NIFFile> LoadStatic(STATRecord stat)
-        {
-            return null;
-        }
+        //public async Task<NIFFile> LoadStatic(STATRecord stat)
+        //{
+        //    return null;
+        //}
     }
 }

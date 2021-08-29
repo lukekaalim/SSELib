@@ -1,87 +1,116 @@
 ﻿using System;
 using System.Collections.Generic;
+
 using static BlockStructure.Logic.Syntax.Operator;
 
 namespace BlockStructure.Logic
 {
-    public static class Interpreter
+    public class Interpreter
     {
-        public static Value Interpret (Expression expression, State state = null)
+        delegate bool EvaluateLogicalBinaryOperation(long left, long right);
+        static Dictionary<Syntax.Operator, EvaluateLogicalBinaryOperation> LogicalBinaryEvaluators = new Dictionary<Syntax.Operator, EvaluateLogicalBinaryOperation>(new Syntax.Comparer())
+        {
+            { new Logical.And(),                    (l, r) => (l != 0) && (r != 0) },
+            { new Logical.Or(),                     (l, r) => (l != 0) || (r != 0) },
+
+            { new Equatable.LessThan(),             (l, r) => l < r },
+            { new Equatable.LessThanOrEqual(),      (l, r) => l <= r },
+            { new Equatable.GreaterThan(),          (l, r) => l > r },
+            { new Equatable.GreaterThanOrEqual(),   (l, r) => l >= r },
+
+            { new Equatable.Equal(),                (l, r) => l == r },
+            { new Equatable.NotEqual(),             (l, r) => l != r },
+        };
+
+        delegate long EvaluatNumericalBinaryOperation(long left, long right);
+        static Dictionary<Syntax.Operator, EvaluatNumericalBinaryOperation> NumericalBinaryEvaluators = new Dictionary<Syntax.Operator, EvaluatNumericalBinaryOperation>(new Syntax.Comparer())
+        {
+            { new Numerical.Addition(),         (l, r) => l + r },
+            { new Numerical.Subtraction(),      (l, r) => l - r },
+            { new Numerical.Multiplication(),   (l, r) => l * r },
+            { new Numerical.Division(),         (l, r) => l / r },
+
+            { new Bitwise.And(),                (l, r) => l & r },
+            { new Bitwise.Or(),                 (l, r) => l | r },
+            { new Bitwise.ShiftLeft(),          (l, r) => l << (int)r },
+            { new Bitwise.ShiftRight(),         (l, r) => r >> (int)r },
+        };
+
+        public class State
+        {
+            public Dictionary<string, long> ParameterValues { get; set; }
+            public Dictionary<string, State> ParameterCompoundStates { get; set; }
+        }
+
+        public State CurrentState { get; }
+
+        public Interpreter(State state)
+        {
+            CurrentState = state;
+        }
+
+        public long Evaluate(Expression expression)
         {
             switch (expression)
             {
-                case NestedExpression nested:
-                    return Interpret(nested.Expression, state);
-                case BinaryOperationExpression operation:
-                    var left = Interpret(operation.LeftOperand, state);
-                    var right = Interpret(operation.RightOperand, state);
-                    if (BinaryOps.TryGetValue(operation.Operator, out var performOp))
-                        return performOp(left, right);
-                    throw new NotImplementedException();
-                case UnaryOperationExpression unaryOperation:
-                    var value = Interpret(unaryOperation.Operand, state);
-                    if (UnaryOps.TryGetValue(unaryOperation.Operator, out var performUnaryOp))
-                        return performUnaryOp(value);
-                    throw new NotImplementedException();
-                case TextExpression text:
-                    return ReadTextExpression(text, state);
-                case null:
-                    return null;
+                case Expression.Nested nested:
+                    return Evaluate(nested.Expression);
+                case Expression.Parameter parameter:
+                    return CurrentState.ParameterValues[parameter.Name];
+                case Expression.Literal literal:
+                    return literal.Value;
+                case Expression.Operation.Binary binaryOperation:
+                    return EvaluateBinaryOperation(binaryOperation);
+                case Expression.Operation.Unary unaryOperation:
+                    return EvaluateUnaryOperation(unaryOperation);
                 default:
-                    throw new NotImplementedException();
+                    throw new Exception();
             }
         }
 
-        public delegate Value PerformUnaOp(Value v);
-        public static Dictionary<Syntax.Operator, PerformUnaOp> UnaryOps = new Dictionary<Syntax.Operator, PerformUnaOp>(new Syntax.Comparer())
+        long EvaluateUnaryOperation(Expression.Operation.Unary unary)
         {
-            { new Logical.Not(), (v) => Value.From(!v.AsBoolean) },
-        };
-        public delegate Value PerformBinOp(Value l, Value r);
-        public static Dictionary<Syntax.Operator, PerformBinOp> BinaryOps = new Dictionary<Syntax.Operator, PerformBinOp>(new Syntax.Comparer())
+            long left = Evaluate(unary.Operand);
+            var op = unary.Operator;
+
+            switch (op)
+            {
+                case Logical.Not _:
+                    return (left != 0) ? 0 : 1;
+                default:
+                    throw new Exception();
+            }
+        }
+
+        long EvaluateBinaryOperation(Expression.Operation.Binary binary)
         {
-            { new Logical.And(), (l, r) => Value.From(l.AsBoolean && r.AsBoolean) },
-            { new Logical.Or(), (l, r) => Value.From(l.AsBoolean || r.AsBoolean) },
+            var op = binary.Operator;
 
-            { new Numerical.Addition(), (l, r) => Value.From(l.AsInterger + r.AsInterger) },
-            { new Numerical.Subtraction(), (l, r) => Value.From(l.AsInterger - r.AsInterger) },
-            { new Numerical.Multiplication(), (l, r) => Value.From(l.AsInterger * r.AsInterger) },
-            { new Numerical.Division(), (l, r) => Value.From(l.AsInterger / r.AsInterger) },
+            if (op is Structural.Member member)
+            {
+                if (binary.LeftOperand is Expression.Parameter compParam &&
+                    binary.RightOperand is Expression.MemberName memberName)
+                {
+                    return CurrentState
+                        .ParameterCompoundStates[compParam.Name]
+                        .ParameterValues[memberName.Name];
+                }
+                throw new Exception();
+            }
+            long left = Evaluate(binary.LeftOperand);
+            long right = Evaluate(binary.RightOperand);
 
-            { new Equatable.LessThan(), (l, r) => Value.From(l.AsInterger < r.AsInterger) },
-            { new Equatable.LessThanOrEqual(), (l, r) => Value.From(l.AsInterger <= r.AsInterger) },
-            { new Equatable.GreaterThan(), (l, r) => Value.From(l.AsInterger > r.AsInterger) },
-            { new Equatable.GreaterThanOrEqual(), (l, r) => Value.From(l.AsInterger >= r.AsInterger) },
-
-            { new Equatable.Equal(), (l, r) => Value.From(l.AsString == r.AsString) },
-            { new Equatable.NotEqual(), (l, r) => Value.From(l.AsString != r.AsString) },
-
-            { new Structural.Member(), (l, r) => l.AsStructure[r.AsString] },
-
-            { new Bitwise.And(), (l, r) => Value.From(l.AsInterger & r.AsInterger) },
-            { new Bitwise.Or(), (l, r) => Value.From(l.AsInterger | r.AsInterger) },
-            { new Bitwise.ShiftLeft(), (l, r) => Value.From(l.AsInterger << (int)r.AsInterger) },
-            { new Bitwise.ShiftRight(), (l, r) => Value.From(l.AsInterger >> (int)r.AsInterger) },
-        };
-
-        public static Value ReadTextExpression (TextExpression expression, State state)
-        {
-            if (int.TryParse(expression.Text, out var interger))
-                return new IntergerValue(interger);
-
-            if (expression.Text.StartsWith("0x"))
-                    return new IntergerValue(int.Parse(
-                        expression.Text.Substring(2),
-                        System.Globalization.NumberStyles.AllowHexSpecifier
-                    ));
-
-            if (state != null && state.Values.ContainsKey(expression.Text))
-                return state.Values[expression.Text];
-
-            if (expression.Text.Contains("."))
-                return new IntergerValue(VersionParser.Parse(expression.Text));
-
-            return new StringValue(expression.Text);
+            switch (op)
+            {
+                case Numerical _:
+                case Bitwise _:
+                    return NumericalBinaryEvaluators[op](left, right);
+                case Logical _:
+                case Equatable _:
+                    return LogicalBinaryEvaluators[op](left, right) ? 1 : 0;
+                default:
+                    throw new Exception();
+            }
         }
     }
 }

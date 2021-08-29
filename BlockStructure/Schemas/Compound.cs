@@ -5,7 +5,7 @@ using System.Xml.Linq;
 
 namespace BlockStructure.Schemas
 {
-    public class CompoundSchema
+    public class CompoundSchema : IContainsFields
     {
         public string Name { get; set; }
         public bool Generic { get; set; }

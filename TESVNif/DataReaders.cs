@@ -11,7 +11,8 @@ namespace SSE.TESVNif
 {
     public static class DataReaders
     {
-        public static object ReadBasicObject(BinaryReader reader, BasicSchema schema, Reader.ReadingContext context)
+        /*
+        public static object ReadBasicObject(BinaryReader reader, BasicSchema schema, DataReader.ReadingContext context)
         {
             switch (schema.Name)
             {
@@ -44,7 +45,7 @@ namespace SSE.TESVNif
                 case "byte":
                     return reader.ReadByte();
                 case "bool":
-                    if (context.Version.NifVersion <= VersionParser.Parse("4.0.0.2"))
+                    if (context.Version.NifVersion <= NIFVersion.Parse("4.0.0.2"))
                         return reader.ReadInt32();
                     return reader.ReadByte();
                 case "float":
@@ -69,5 +70,6 @@ namespace SSE.TESVNif
             var length = reader.ReadUInt32();
             return new string(reader.ReadChars((int)length));
         }
+        */
     }
 }

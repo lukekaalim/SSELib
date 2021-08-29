@@ -19,7 +19,7 @@ namespace BlockStructure.Schemas
         public VersionSchema(XElement element)
         {
             Id = element.Attribute("id").Value;
-            NifVersion = VersionParser.Parse(element.Attribute("num").Value);
+            NifVersion = NIFVersion.Parse(element.Attribute("num").Value);
             Supported = bool.Parse(element.Attribute("supported")?.Value ?? "true");
 
             if (element.Attribute("bsver") != null)

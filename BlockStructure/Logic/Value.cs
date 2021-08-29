@@ -4,7 +4,8 @@ using System.Linq;
 
 namespace BlockStructure.Logic
 {
-    public abstract class Value
+    /*
+    public abstract class Oldvalue
     {
         public virtual long AsInterger =>
             throw new Exception("Cannot cast Type");
@@ -18,20 +19,20 @@ namespace BlockStructure.Logic
         public virtual bool AsBoolean =>
             throw new Exception("Cannot cast Type");
 
-        public virtual Dictionary<string, Value> AsStructure =>
+        public virtual Dictionary<string, Oldvalue> AsStructure =>
             throw new Exception("Cannot cast Type");
 
 
-        public static Value From(bool value)
+        public static Oldvalue From(bool value)
             => new BooleanValue(value);
-        public static Value From(string value)
+        public static Oldvalue From(string value)
             => new StringValue(value);
-        public static Value From(long value)
+        public static Oldvalue From(long value)
             => new IntergerValue(value);
-        public static Value From(float value)
+        public static Oldvalue From(float value)
             => new FloatValue(value);
 
-        public static Value From(Data result)
+        public static Oldvalue From(Data result)
         {
             switch (result)
             {
@@ -78,7 +79,7 @@ namespace BlockStructure.Logic
         }
     }
 
-    public class IntergerValue : Value
+    public class IntergerValue : Oldvalue
     {
         public long Content { get; set; }
         public IntergerValue(long content) => Content = content;
@@ -87,7 +88,7 @@ namespace BlockStructure.Logic
         public override bool AsBoolean => Content != 0;
     }
 
-    public class FloatValue : Value
+    public class FloatValue : Oldvalue
     {
         public double Content { get; set; }
         public FloatValue(double content) => Content = content;
@@ -95,14 +96,14 @@ namespace BlockStructure.Logic
         public override double AsFloat => Content;
     }
 
-    public class StringValue : Value
+    public class StringValue : Oldvalue
     {
         public string Content { get; set; }
         public StringValue(string content) => Content = content; 
         public override string AsString => Content;
     }
 
-    public class BooleanValue : Value
+    public class BooleanValue : Oldvalue
     {
         public bool Content { get; set; }
         public BooleanValue(bool content) => Content = content;
@@ -110,10 +111,11 @@ namespace BlockStructure.Logic
         public override bool AsBoolean => Content;
     }
 
-    public class StructureValue : Value
+    public class StructureValue : Oldvalue
     {
-        public Dictionary<string, Value> Content { get; set; }
-        public StructureValue(Dictionary<string, Value> content) => Content = content;
-        public override Dictionary<string, Value> AsStructure => Content;
+        public Dictionary<string, Oldvalue> Content { get; set; }
+        public StructureValue(Dictionary<string, Oldvalue> content) => Content = content;
+        public override Dictionary<string, Oldvalue> AsStructure => Content;
     }
+    */
 }

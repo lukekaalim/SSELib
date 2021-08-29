@@ -1,6 +1,6 @@
 using NUnit.Framework;
 using System;
-using SSE.TESVArchive;
+using SSE;
 using SSE.TESVNif;
 using System.Linq;
 using System.IO;

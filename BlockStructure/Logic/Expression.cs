@@ -4,95 +4,111 @@ using System.Collections.Generic;
 
 namespace BlockStructure.Logic
 {
-    public abstract class Expression { }
-
-    public class NestedExpression : Expression
+    public abstract class Expression
     {
-        public Expression Expression { get; set; }
-        public NestedExpression(Expression expression)
+        public class Literal : Expression
         {
-            Expression = expression;
+            public long Value { get; set; }
+            public Literal(long value) =>
+                Value = value;
         }
-    }
-
-    public class TextExpression : Expression
-    {
-        public string Text { get; set; }
-        public TextExpression(string identifer)
+        public class Parameter : Expression
         {
-            Text = identifer;
+            public string Name { get; set; }
+            public Parameter(string name) =>
+                Name = name;
         }
-
-        public static List<TextExpression> FindAll(Expression expression)
+        public class Nested : Expression
         {
-            switch (expression)
+            public Expression Expression { get; set; }
+            public Nested(Expression expression) =>
+                Expression = expression;
+        }
+        public class MemberName : Expression
+        {
+            public string Name { get; set; }
+            public MemberName(string name) =>
+                Name = name;
+        }
+        public abstract class Operation : Expression
+        {
+            public Syntax.Operator Operator { get; set; }
+            public abstract List<Expression> Operands { get; }
+
+            public class Unary : Operation
             {
-                case TextExpression text:
-                    return new List<TextExpression>() { text };
-                case BinaryOperationExpression binaryOperation:
-                    return FindAll(binaryOperation.LeftOperand)
-                        .Concat(FindAll(binaryOperation.RightOperand))
-                        .ToList();
-                case UnaryOperationExpression unaryOperation:
-                    return FindAll(unaryOperation.Operand);
-                case NestedExpression nestedExpression:
-                    return FindAll(nestedExpression.Expression);
-                default:
-                    return new List<TextExpression>();
+                public Expression Operand { get; set; }
+
+                public override List<Expression> Operands =>
+                    new List<Expression> { Operand };
+            }
+
+            public class Binary : Operation
+            {
+                public Expression LeftOperand { get; set; }
+                public Expression RightOperand { get; set; }
+
+                public override List<Expression> Operands =>
+                    new List<Expression> { LeftOperand, RightOperand };
             }
         }
-    }
-
-    public class OperationExpression : Expression
-    {
-        public Syntax.Operator Operator { get; set; }
-    }
-
-    public class UnaryOperationExpression : OperationExpression
-    {
-        public Expression Operand { get; set; }
-    }
-
-    public class BinaryOperationExpression : OperationExpression
-    {
-        public Expression LeftOperand { get; set; }
-        public Expression RightOperand { get; set; }
-    }
-
-    public class ExpressionPart { }
-
-    public class OperatorPart : ExpressionPart
-    {
-        public Syntax.Operator Operator { get; set; }
-        public int Precedence
+        /// <summary>
+        /// Parts! Used for ordering expression precedence.
+        /// </summary>
+        public class Part
         {
-            get
+            public class Operator : Part
             {
-                if (OperatorPrecedence.TryGetValue(Operator, out var precedence))
-                    return precedence;
-                else
-                    return 0;
+                public Syntax.Operator Value { get; set; }
+                public int Precedence =>
+                    OperatorPrecedence.ContainsKey(Value) ?
+                    OperatorPrecedence[Value] : 0;
+
+                public Operator(Syntax.Operator operatorType) =>
+                    Value = operatorType;
+
+                public static Dictionary<Syntax.Operator, int> OperatorPrecedence = new Dictionary<Syntax.Operator, int>(new Syntax.Comparer())
+                {
+                    { new Syntax.Operator.Structural.Member(), -2 },
+                    { new Syntax.Operator.Logical.Not(), -1 },
+                    { new Syntax.Operator.Logical.And(), 1 },
+                    { new Syntax.Operator.Logical.Or(), 2 },
+                };
+            }
+
+            public class Operand : Part
+            {
+                public Expression Value { get; set; }
+                public Operand(Expression operand) =>
+                    Value = operand;
             }
         }
-        public OperatorPart(Syntax.Operator operatorType)
+
+        public List<T> FindAll<T>() where T : Expression
         {
-            Operator = operatorType;
+            var children = FindInChildren();
+
+            if (this is T foundT)
+                children.Add(foundT);
+
+            return children;
+
+            List<T> FindInChildren()
+            {
+                switch (this)
+                {
+                    case Nested nested:
+                        return nested.Expression.FindAll<T>();
+                    case Operation operation:
+                        return operation.Operands
+                            .SelectMany(op => op.FindAll<T>())
+                            .ToList();
+                    default:
+                        return new List<T>();
+                }
+            }
         }
 
-        public static Dictionary<Syntax.Operator, int> OperatorPrecedence = new Dictionary<Syntax.Operator, int>(new Syntax.Comparer())
-            {
-                { new Syntax.Operator.Structural.Member(), -2 },
-                { new Syntax.Operator.Logical.Not(), -1 },
-                { new Syntax.Operator.Logical.And(), 1 },
-                { new Syntax.Operator.Logical.Or(), 2 },
-            };
-    }
-    public class OperandPart : ExpressionPart
-    {
-        public Expression Operand { get; set; }
-        public OperandPart(Expression operand)
-        {
-            Operand = operand;
-        }
+
     }
 }

@@ -38,10 +38,12 @@ namespace BlockStructure.Schemas
         public TokenLookup TokenLookup { get; set; }
         public InheritanceLookup InheritanceLookup { get; set; }
         public ExpressionLookup ExpressionLookup { get; set; }
+        public ParameterLookup ParameterLookup { get; set; }
+        public TypeLookup TypeLookup { get; set; }
 
         public SchemaDocument(XElement element)
         {
-            SchemaVersion = VersionParser.Parse(element.Attribute("version").Value);
+            SchemaVersion = NIFVersion.Parse(element.Attribute("version").Value);
 
             var elementsByName = element.Elements()
                 .ToLookup(e => e.Name);
@@ -75,6 +77,8 @@ namespace BlockStructure.Schemas
             TokenLookup = new TokenLookup(Tokens.Concat(StaticTokens));
             InheritanceLookup = new InheritanceLookup(NiObjects);
             ExpressionLookup = new ExpressionLookup(NiObjects.Values, Compounds.Values, TokenLookup);
+            ParameterLookup = new ParameterLookup(Compounds.Values, ExpressionLookup);
+            TypeLookup = new TypeLookup(Compounds.Values, NiObjects.Values);
         }
     }
 }

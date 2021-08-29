@@ -11,13 +11,17 @@ namespace BlockStructure.Emit
 {
     public class SchemaTypeBuilder
     {
-        public Dictionary<string, Type> SchemaTypesByName { get; set; }
+        SchemaDocument Document;
+
+        public IReadOnlyDictionary<string, Type> SchemaTypesByName { get; }
+        public IReadOnlyDictionary<string, GenericTypeParameterBuilder> TemplateTypeByName { get; }
+
         public Dictionary<string, TypeBuilder> BuiltTypesByName { get; set; }
         public Dictionary<string, EnumBuilder> BuiltEnumsByName { get; set; }
 
-        public BasicsDescription BasicTypeDescriptions { get; set; }
+        public SchemaBasicReaderBuilder BasicTypeDescriptions { get; set; }
 
-        public Dictionary<CompoundSchema, (TypeBuilder, GenericTypeParameterBuilder)> CompoundTypes { get; set; }
+        public Dictionary<CompoundSchema, TypeBuilder> CompoundTypes { get; set; }
         public Dictionary<NiObjectSchema, TypeBuilder> NiObjectTypes { get; set; }
 
         public Dictionary<EnumSchema, EnumBuilder> EnumTypes { get; set; }
@@ -26,8 +30,9 @@ namespace BlockStructure.Emit
 
         public SchemaTypeBuilder(SchemaDocument document,
                                  ModuleBuilder moduleBuilder,
-                                 BasicsDescription basicBuilder)
+                                 SchemaBasicReaderBuilder basicBuilder)
         {
+            Document = document;
             BasicTypeDescriptions = basicBuilder;
 
             CompoundTypes = document.Compounds
@@ -42,7 +47,7 @@ namespace BlockStructure.Emit
                 .ToDictionary(kvp => kvp.Value, kvp => BuildBitflagType(moduleBuilder, kvp.Value, document));
 
             BuiltTypesByName = new List<(string, TypeBuilder)>()
-                .Concat(CompoundTypes.Select(kvp => (kvp.Key.Name, kvp.Value.Item1)))
+                .Concat(CompoundTypes.Select(kvp => (kvp.Key.Name, kvp.Value)))
                 .Concat(NiObjectTypes.Select(kvp => (kvp.Key.Name, kvp.Value)))
                 .Concat(BitFieldTypes.Select(kvp => (kvp.Key.Name, kvp.Value)))
                 .ToDictionary(pair => pair.Item1, pair => pair.Item2);
@@ -56,21 +61,95 @@ namespace BlockStructure.Emit
                 .Concat(BuiltTypesByName.Select(kvp => (kvp.Key, kvp.Value as Type)))
                 .Concat(BuiltEnumsByName.Select(kvp => (kvp.Key, kvp.Value as Type)))
                 .ToDictionary(pair => pair.Item1, pair => pair.Item2);
+            TemplateTypeByName = CompoundTypes
+                .ToDictionary(c => c.Key.Name, c => BuildTemplateType(c.Value, c.Key));
         }
-        (TypeBuilder, GenericTypeParameterBuilder) BuildCompoundType(ModuleBuilder moduleBuilder, CompoundSchema schema)
+
+        /// <summary>
+        /// Get the type associated with a field, with the 
+        /// </summary>
+        /// <param name="field"></param>
+        /// <param name="parentName">The name of the compound or niObject that this object belongs to</param>
+        /// <returns></returns>
+        public Type GetFieldType(FieldSchema field)
+        {
+            var parentName = Document.TypeLookup.ParentNameBySchema[field];
+            var templateType = TemplateTypeByName.GetValueOrDefault(parentName);
+            return GetDimensionalType(field.Type, field.Template, field.Dimensions.Count, templateType);
+        }
+        /// <summary>
+        /// Get the type associated with the template argument of a field
+        /// </summary>
+        /// <param name="field"></param>
+        /// <param name="parentName"></param>
+        /// <returns></returns>
+        public Type GetFieldTemplateType(FieldSchema field)
+        {
+            if (field.Template == null)
+                return null;
+            var parentName = Document.TypeLookup.ParentNameBySchema[field];
+            var templateType = TemplateTypeByName.GetValueOrDefault(parentName);
+            return GetBaseType(field.Template, templateType);
+        }
+        /// <summary>
+        /// Gets the type that the field is an array of (assuming the field is for an array)
+        /// </summary>
+        /// <param name="field"></param>
+        /// <param name="parentName"></param>
+        /// <returns></returns>
+        public Type GetArrayType(FieldSchema field)
+        {
+            var parentName = Document.TypeLookup.ParentNameBySchema[field];
+            var templateType = TemplateTypeByName.GetValueOrDefault(parentName);
+            return GetTemplatedType(field.Type, field.Template, templateType);
+        }
+
+        Type GetBaseType(string typeName,
+                         GenericTypeParameterBuilder templateType = null)
+        {
+            var typeIsTemplate = typeName == "#T#";
+            return typeIsTemplate ? templateType : SchemaTypesByName[typeName];
+        }
+        Type GetTemplatedType(string typeName,
+                              string templateName = null,
+                              GenericTypeParameterBuilder templateType = null)
+        {
+            var baseType = GetBaseType(typeName, templateType);
+
+            if (!baseType.IsGenericTypeDefinition)
+                return baseType;
+
+            var genericArgument = GetBaseType(templateName, templateType);
+            return baseType.MakeGenericType(genericArgument);
+        }
+        Type GetDimensionalType(string typeName,
+                                string templateName = null,
+                                int dimensions = 0,
+                                GenericTypeParameterBuilder templateType = null)
+        {
+            var baseType = GetTemplatedType(typeName, templateName, templateType);
+
+            if (dimensions == 0)
+                return baseType;
+
+            return baseType.MakeArrayType(dimensions);
+        }
+
+        TypeBuilder BuildCompoundType(ModuleBuilder moduleBuilder, CompoundSchema schema)
         {
             var name = schema.Name.ToPascalCase();
             var attr = TypeAttributes.Public;
             var compoundBuilder = moduleBuilder.DefineType(name, attr);
+            return compoundBuilder;
+        }
+        GenericTypeParameterBuilder BuildTemplateType(TypeBuilder compoundBuilder, CompoundSchema schema)
+        {
+            if (!schema.Generic)
+                return null;
 
-            if (schema.Generic)
-            {
-                string[] typeParamNames = { "T" };
-                var typeParams = compoundBuilder.DefineGenericParameters(typeParamNames);
-                return (compoundBuilder, typeParams[0]);
-            }
-
-            return (compoundBuilder, null);
+            string[] typeParamNames = { "T" };
+            var typeParams = compoundBuilder.DefineGenericParameters(typeParamNames);
+            return typeParams[0];
         }
         TypeBuilder BuildNiObjectType(ModuleBuilder moduleBuilder, NiObjectSchema schema)
         {
@@ -102,12 +181,13 @@ namespace BlockStructure.Emit
             var attr = TypeAttributes.Public;
             var underlyingTypeDescription = BasicTypeDescriptions
                 .BasicDescriptions[document.Basics[schema.Storage]];
-            /*
+            
             Type flagsAttributeType = typeof(FlagsAttribute);
             ConstructorInfo attributeConstructor = flagsAttributeType.GetConstructor(new Type[] { });
-            */
+            
             var underlingType = underlyingTypeDescription.UnderlyingType;
             var bitflagBuilder = moduleBuilder.DefineEnum(name, attr, underlingType);
+
             //bitflagBuilder.SetCustomAttribute(attributeConstructor, new byte[] { 01, 00, 01 });
             return bitflagBuilder;
         }

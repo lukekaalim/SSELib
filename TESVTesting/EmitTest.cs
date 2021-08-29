@@ -3,6 +3,8 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 using NUnit.Framework;
 
@@ -18,9 +20,8 @@ namespace TESVTesting
         [Test]
         public void TestEmit()
         {
-            
-            var doc = NifSchema.Doc;
-            var basicDescription = new BasicsDescription(doc, new Dictionary<string, Type>()
+            var doc = NifSchema.LoadEmbedded();
+            var basics = new Dictionary<string, Type>()
             {
                 { "uint64", typeof(ulong) },
                 { "int64", typeof(long) },
@@ -42,28 +43,32 @@ namespace TESVTesting
                 { "Ref", typeof(int) },
                 { "StringOffset", typeof(uint) },
                 { "NiFixedString", typeof(uint) },
-            });
+            };
             var version = doc.Versions
                 .Find(v => v.Id == "V20_2_0_7_SSE")
                 .GetVersionKeys()
                 .First();
 
-            var assembly = SchemaDocumentBuilder.CreateNewAssembly(NifSchema.Doc,
-                                                                   basicDescription,
-                                                                   version);
-            //var a = assembly.GetReferencedAssemblies();
-            //var b = Assembly.GetExecutingAssembly();
-            //var c = b.GetReferencedAssemblies();
-            //var d = typeof(Enum);
+            var name = new AssemblyName("MyNonStandardLibrary");
+            var access = AssemblyBuilderAccess.Run;
+            var assembly = AssemblyBuilder.DefineDynamicAssembly(name, access);
+            var module = assembly.DefineDynamicModule("MyNonStandardLibrary.dll");
+
+            var schema = new SchemaDocumentBuilder(module, doc, basics, version);
+
             var generator = new Lokad.ILPack.AssemblyGenerator();
-            //generator.GenerateAssembly(assembly, "/Users/lukekaalim/projects/SSE-Data-Lib/test.dll");
-            
+            generator.GenerateAssembly(assembly, "./MyNonStandardLibrary.dll");
         }
 
         [Test]
         public void TestLoad()
         {
-            //var a = AccumFlags.ACCUM_NEG_FRONT;
+            //var reader = new DefaultReader();
+            //var sizedString = new SizedString(reader);
+            //var assembly = Assembly.LoadFile("/Users/lukekaalim/projects/SSE-Data-Lib/test.dll");
+            //var sizedT = assembly.DefinedTypes.First(t => t.Name == "SizedString");
+            //var sized = Activator.CreateInstance(sizedT);
+            //var sized = Activator.CreateInstance(typeof(SizedString));
         }
     }
 }

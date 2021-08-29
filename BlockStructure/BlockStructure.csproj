@@ -9,9 +9,11 @@
     <None Remove="Schemas\" />
     <None Remove="Schemas\Forward\" />
     <None Remove="StyleCop.Analyzers" />
+    <None Remove="DataReader\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Logic\" />
     <Folder Include="Schemas\" />
+    <Folder Include="Reading\" />
   </ItemGroup>
 </Project>
